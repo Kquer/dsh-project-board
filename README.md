@@ -46,7 +46,7 @@ This package is developed at [github.com/Kquer/dsh-project-board](https://github
 git clone git@github.com:Kquer/dsh-project-board.git
 cd dsh-project-board
 node --check index.js client.js web/app.js
-git tag -a v0.3.0 -m "dsh-project-board 0.3.0"   # for the next release
+git tag -a v0.2.1 -m "dsh-project-board 0.2.1"   # for the next release
 git push origin main --tags
 ```
 

@@ -46,7 +46,7 @@ DSH 右侧栏只保留一个启动器；真正的主界面是**独立网页**：
 git clone git@github.com:Kquer/dsh-project-board.git
 cd dsh-project-board
 node --check index.js client.js web/app.js
-git tag -a v0.3.0 -m "dsh-project-board 0.3.0"   # 下一次发布
+git tag -a v0.2.1 -m "dsh-project-board 0.2.1"   # 下一次发布
 git push origin main --tags
 ```
 
