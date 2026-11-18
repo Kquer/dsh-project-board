@@ -9,7 +9,7 @@ DSH 右侧栏只保留一个启动器；真正的主界面是**独立网页**：
 | 区域 | 默认数据源 | 行为 |
 |---|---|---|
 | 参考文档 | `docs/reference/**/*.md` | 只读 Markdown，按目录分组；支持参考目录下的图片 |
-| 项目结构 | `docs/board/project-map.json` | 分层模块依赖图：状态着色、缩放、平移、拖节点、筛选、聚焦、导出 SVG/布局 |
+| 项目结构 | `docs/board/project-map.json` | 默认自上而下架构（概念子系统 → 模块），另有依赖 / 数据流 / 流程视图；缩放、平移、筛选、聚焦、导出 SVG/布局 |
 | 开发日志 | `docs/DEVLOG.md` | 按 `##` 条目折叠，最新一条默认展开 |
 
 看板会跟随**当前会话的工作目录**。切换到另一个 DSH 工作区时自动解析那个项目；也可以用页面顶部的项目切换器，打开 DSH 已登记的其他 Workspace。
@@ -209,7 +209,7 @@ DSH 的 **Plugins → Discover** 读取用户自己添加的索引，没有官�
       "source": {
         "type": "git",
         "url": "https://github.com/<你>/<仓库>",
-        "commit": "<40 位 commit>",
+        "commit": "<40 位 commit>"
       },
       "engines": { "dsh": ">=0.2.2-rc.3 <0.3.0" }
     }]

@@ -9,7 +9,7 @@ The DSH right sidebar keeps a small launcher. The real board is a **standalone w
 | Area | Source (default) | Behaviour |
 | --- | --- | --- |
 | Reference docs | `docs/reference/**/*.md` | Read-only Markdown, grouped by directory, image support for files under the reference directory |
-| Structure canvas | `docs/board/project-map.json` | Layered module graph with dependency edges, status colours, pan/zoom, node dragging, filters, focus, SVG/layout export |
+| Structure canvas | `docs/board/project-map.json` | Top-down architecture by default (subsystems → modules), plus dependency, data-flow, and execution-flow views; pan/zoom, filters, focus, SVG/layout export |
 | Development log | `docs/DEVLOG.md` | Entries split by `## `, newest open first |
 
 The board follows the **current Session working directory**. Switch to another DSH workspace and the board resolves that project, or use the project picker for any workspace registered in DSH.
@@ -209,7 +209,7 @@ DSH's **Plugins → Discover** reads indexes that users add; there is no officia
       "source": {
         "type": "git",
         "url": "https://github.com/<you>/<repo>",
-        "commit": "<40-hex-commit>",
+        "commit": "<40-hex-commit>"
       },
       "engines": { "dsh": ">=0.2.2-rc.3 <0.3.0" }
     }]
