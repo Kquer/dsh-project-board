@@ -38,6 +38,20 @@ The architecture view follows **divide and conquer → stepwise refinement → s
 - DeepSeek Harness `0.2.2-rc.3` or a later `0.2.x` (the plugin uses the right sidebar, `ctx.webServer`, and Session working-directory services).
 - The plugin is a bundle with a Host half and a browser launcher; no build step and no npm dependencies.
 
+## Repository and development
+
+This package is developed at [github.com/Kquer/dsh-project-board](https://github.com/Kquer/dsh-project-board) (private). The repository root **is** the plugin package, so a clone can be installed directly with **Plugins → Add plugin**.
+
+```bash
+git clone git@github.com:Kquer/dsh-project-board.git
+cd dsh-project-board
+node --check index.js client.js web/app.js
+git tag -a v0.3.0 -m "dsh-project-board 0.3.0"   # for the next release
+git push origin main --tags
+```
+
+Keep `CHANGELOG.md` current and bump `version` in `package.json`. The consuming project keeps its own `docs/reference`, `docs/board/project-map.json`, and `docs/DEVLOG.md`; this repository only ships the plugin.
+
 ## Install (local folder)
 
 1. Put this directory anywhere on the machine, for example `<repo>/plugins/dsh-project-board`.

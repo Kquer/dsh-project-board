@@ -38,6 +38,20 @@ DSH 右侧栏只保留一个启动器；真正的主界面是**独立网页**：
 - DSH `0.2.2-rc.3` 或更高的 `0.2.x`（依赖右侧栏、`ctx.webServer`、会话工作目录服务）。
 - 插件是双半包（Host + 浏览器启动器），无构建步骤、无 npm 依赖。
 
+## 仓库与开发
+
+这个包在 [github.com/Kquer/dsh-project-board](https://github.com/Kquer/dsh-project-board)（私有仓库）维护。**仓库根目录就是插件包**，clone 下来后可直接用 **Plugins → Add plugin** 指向它。
+
+```bash
+git clone git@github.com:Kquer/dsh-project-board.git
+cd dsh-project-board
+node --check index.js client.js web/app.js
+git tag -a v0.3.0 -m "dsh-project-board 0.3.0"   # 下一次发布
+git push origin main --tags
+```
+
+改动时同步更新 `CHANGELOG.md` 和 `package.json` 的 `version`。项目侧继续维护自己的 `docs/reference`、`docs/board/project-map.json`、`docs/DEVLOG.md`；这个仓库只放插件本身。
+
 ## 安装（本地目录）
 
 1. 把本目录放到机器的任意位置，例如 `<仓库>/plugins/dsh-project-board`。
