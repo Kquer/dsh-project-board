@@ -11,6 +11,7 @@ The DSH right sidebar keeps a small launcher. The real board is a **standalone w
 | Reference docs | `docs/reference/**/*.md` | Read-only Markdown, grouped by directory, image support for files under the reference directory |
 | Structure canvas | `docs/board/project-map.json` | Top-down architecture by default (subsystems → modules), plus dependency, data-flow, and execution-flow views; pan/zoom, filters, focus, SVG/layout export |
 | Development log | `docs/DEVLOG.md` | Entries split by `## `, newest open first |
+| Long-term directions | `docs/board/roadmap.json` | AI-generated on request; grouped by horizon, with a curated **长期参考** panel. Long-term items do not enter the current architecture by default. |
 
 The board follows the **current Session working directory**. Switch to another DSH workspace and the board resolves that project, or use the project picker for any workspace registered in DSH.
 
@@ -46,7 +47,7 @@ This package is developed at [github.com/Kquer/dsh-project-board](https://github
 git clone git@github.com:Kquer/dsh-project-board.git
 cd dsh-project-board
 node --check index.js client.js web/app.js
-git tag -a v0.2.1 -m "dsh-project-board 0.2.1"   # for the next release
+git tag -a v0.3.1 -m "dsh-project-board 0.3.1"   # for the next release
 git push origin main --tags
 ```
 
@@ -79,6 +80,8 @@ The bundle patch sets these defaults. Override them in the plugin row's config:
 | `devlogPath` | `docs/DEVLOG.md` | Development log. |
 | `projectPath` | `docs/PROJECT.md` | Allowed in the read-only doc endpoint (optional). |
 | `layoutPath` | `docs/board/layout.json` | Optional committed manual layout; the browser merges it under its local layout. |
+| `roadmapPath` | `docs/board/roadmap.json` | AI-generated long-term directions; the **长期方向** tab reads it. |
+| `referencePath` | `docs/board/long-term-reference.json` | User-curated subset selected in the long-term tab; the only file the plugin writes, and only after an explicit click. |
 
 Relative paths are resolved against the project root and may not escape it.
 
@@ -92,7 +95,9 @@ Relative paths are resolved against the project root and may not escape it.
 │   │   ├── INDEX.md
 │   │   └── assets/                # images referenced by docs
 │   ├── board/
-│   │   ├── project-map.json       # modules, layers, edges, status
+│   │   ├── project-map.json       # current modules, edges, subsystems, attributes, flows
+│   │   ├── roadmap.json           # AI-generated long-term directions (on request)
+│   │   ├── long-term-reference.json  # user-selected long-term items (plugin-written)
 │   │   └── layout.json            # optional exported layout
 │   ├── PROJECT.md
 │   └── DEVLOG.md
@@ -220,10 +225,16 @@ DSH's **Plugins → Discover** reads indexes that users add; there is no officia
 3. Host the JSON at an HTTPS URL (GitHub Pages or raw).
 4. Users add that URL under **Plugins → Discover → Index sources**.
 
+## Long-term directions and reference
+
+Long-term ideas live in `docs/board/roadmap.json`, not in the current architecture. The **长期方向** tab only reads them; there is no background generation. Ask the assistant in chat to (re)generate the roadmap from `docs/reference/` and the current `project-map.json`, or click **复制生成指令** in the tab to copy a ready prompt. The architecture view hides subsystems with `horizon: later` by default; use **显示长期子系统** in the inspector when you want to peek.
+
+Each roadmap card has **加入长期参考**. That writes only `docs/board/long-term-reference.json` (validated direction ids, atomic write, token-protected POST); everything under `docs/reference/` remains untouched. Commit that file to share the curated set with collaborators. The card order/horizon values are suggestions, not commitments.
+
 ## Security and read-only guarantees
 
 - The standalone page is served on the local DSH web server. The static shell is public; every data endpoint requires the random per-process token embedded in the page URL.
-- Data endpoints only read: they scan the configured reference directory and parse the map/log. There is no write route anywhere in the plugin.
+- Data endpoints are read-only except the one explicit long-term-reference POST. That route accepts only known roadmap direction ids and writes only the configured `referencePath`.
 - The doc endpoint is whitelisted to the reference directory, `DEVLOG.md`, and `PROJECT.md`; `realpath` checks prevent escaping the project root. Images are limited to the reference directory and common raster formats.
 
 ## Limitations

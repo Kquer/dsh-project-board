@@ -395,6 +395,53 @@ code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, m
 .focus-item { display: flex; gap: 7px; font-size: 11.5px; color: var(--text-2); padding: 4px 0; }
 .focus-item b { color: var(--text); white-space: nowrap; }
 
+.longterm { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
+.lt-header {
+  flex: none; display: flex; align-items: center; gap: 16px; padding: 14px 22px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.lt-heading { min-width: 0; }
+.lt-heading h2 { margin: 0 0 2px; font-size: 16px; font-weight: 650; }
+.lt-heading p { margin: 0; color: var(--text-3); font-size: 11px; line-height: 1.55; }
+.lt-header-actions { margin-left: auto; display: flex; gap: 7px; flex: none; }
+.lt-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 330px; }
+.lt-main { min-width: 0; overflow: auto; padding: 20px 24px 70px; scrollbar-width: thin; }
+.lt-ref {
+  min-height: 0; overflow: auto; background: var(--panel); border-left: 1px solid var(--line);
+  padding: 18px 16px 50px; scrollbar-width: thin;
+}
+.lt-ref h3 { margin: 0 0 3px; font-size: 14px; font-weight: 650; }
+.lt-ref .sub { color: var(--text-3); font-size: 10.5px; margin-bottom: 12px; }
+.lt-horizon { margin-bottom: 26px; }
+.lt-horizon h3 { margin: 0 0 10px; font-size: 13px; font-weight: 650; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.lt-horizon h3 span { color: var(--text-3); font-size: 10px; font-weight: 400; }
+.lt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.lt-card {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 15px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.lt-card:hover { border-color: var(--line-strong); box-shadow: 0 5px 16px rgba(0,0,0,.06); }
+.lt-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.lt-card-head { display: flex; align-items: flex-start; gap: 8px; }
+.lt-card-head h4 { margin: 0; font-size: 14px; font-weight: 650; line-height: 1.35; }
+.lt-card-head .horizon { margin-left: auto; flex: none; font-size: 9.5px; color: var(--text-3); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
+.lt-card p { margin: 0; color: var(--text-2); font-size: 11.8px; line-height: 1.65; }
+.lt-card .why { color: var(--text-3); font-size: 10.8px; line-height: 1.6; }
+.lt-card .why b { color: var(--text-2); font-weight: 600; }
+.lt-card .docs { color: var(--text-3); font-size: 9.5px; font-family: ui-monospace, Menlo, monospace; }
+.lt-card-actions { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 4px; }
+.lt-card-actions .btn { height: 26px; font-size: 11px; }
+.lt-card-actions .btn.on { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
+.lt-ref-item { border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; margin-bottom: 7px; background: var(--bg); }
+.lt-ref-item .row { display: flex; align-items: flex-start; gap: 7px; }
+.lt-ref-item b { display: block; font-size: 12px; font-weight: 600; }
+.lt-ref-item small { display: block; color: var(--text-3); font-size: 10px; line-height: 1.45; margin-top: 2px; }
+.lt-ref-item button { margin-left: auto; flex: none; }
+.lt-ref-empty { color: var(--text-3); font-size: 11.5px; line-height: 1.7; border: 1px dashed var(--line); border-radius: 9px; padding: 12px; }
+.lt-empty { color: var(--text-3); text-align: center; padding: 50px 20px; font-size: 12px; line-height: 1.8; }
+.lt-error { border: 1px solid color-mix(in srgb, var(--red) 40%, var(--line)); background: color-mix(in srgb, var(--red) 7%, var(--panel)); border-radius: 10px; padding: 12px 14px; color: var(--red); font-size: 12px; margin-bottom: 14px; }
+
 /* ------------------------------------------------------------------- log */
 .log { overflow: auto; }
 .log-pane { max-width: 960px; margin: 0 auto; padding: 28px 34px 90px; }

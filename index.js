@@ -40,6 +40,8 @@ const DEFAULTS = {
   devlogPath: 'docs/DEVLOG.md',
   projectPath: 'docs/PROJECT.md',
   layoutPath: 'docs/board/layout.json',
+  roadmapPath: 'docs/board/roadmap.json',
+  referencePath: 'docs/board/long-term-reference.json',
 }
 
 const MAP_STATUSES = new Set(['done', 'partial', 'todo', 'unknown', 'blocked'])
@@ -47,6 +49,7 @@ const ATTRIBUTE_KINDS = new Set(['config', 'state', 'derived'])
 const ATTRIBUTE_STATUSES = new Set(['confirmed', 'pending', 'unknown'])
 const FLOW_STATUSES = new Set(['draft', 'confirmed'])
 const SUBSYSTEM_CONCERNS = new Set(['presentation', 'gameplay', 'services', 'data', 'core', 'tooling'])
+const HORIZONS = new Set(['current', 'next', 'later'])
 const IMAGE_TYPES = new Map([
   ['.png', 'image/png'],
   ['.jpg', 'image/jpeg'],
@@ -118,6 +121,8 @@ function normalizeConfig(raw) {
     devlogPath: relativeConfigPath(input.devlogPath, DEFAULTS.devlogPath),
     projectPath: relativeConfigPath(input.projectPath, DEFAULTS.projectPath),
     layoutPath: relativeConfigPath(input.layoutPath, DEFAULTS.layoutPath),
+    roadmapPath: relativeConfigPath(input.roadmapPath, DEFAULTS.roadmapPath),
+    referencePath: relativeConfigPath(input.referencePath, DEFAULTS.referencePath),
   }
 }
 
@@ -362,6 +367,9 @@ function validateMap(data) {
       if (subsystem.concern !== undefined && !SUBSYSTEM_CONCERNS.has(subsystem.concern)) {
         throw new Error(`子系统 ${subsystem.id} 的 concern 非法：${subsystem.concern}`)
       }
+      if (subsystem.horizon !== undefined && !HORIZONS.has(subsystem.horizon)) {
+        throw new Error(`子系统 ${subsystem.id} 的 horizon 非法：${subsystem.horizon}`)
+      }
       if (subsystem.order !== undefined && typeof subsystem.order !== 'number') throw new Error(`子系统 ${subsystem.id} 的 order 必须是数字`)
       if (subsystem.summary !== undefined && typeof subsystem.summary !== 'string') throw new Error(`子系统 ${subsystem.id} 的 summary 必须是字符串`)
       if (!Array.isArray(subsystem.modules) || subsystem.modules.length === 0) throw new Error(`子系统 ${subsystem.id} 缺少 modules`)
@@ -452,6 +460,80 @@ function readLayout(root, layoutPath) {
   }
 }
 
+function validateRoadmap(data) {
+  if (data === null || typeof data !== 'object') throw new Error('根节点必须是对象')
+  if (!Array.isArray(data.horizons) || data.horizons.length === 0) throw new Error('缺少 horizons 数组')
+  const horizonIds = new Set()
+  for (const horizon of data.horizons) {
+    if (typeof horizon?.id !== 'string' || horizon.id === '') throw new Error('horizons[].id 必须是非空字符串')
+    if (horizonIds.has(horizon.id)) throw new Error('horizons 里重复的 id：' + horizon.id)
+    if (typeof horizon.label !== 'string' || horizon.label === '') throw new Error('horizon ' + horizon.id + ' 缺少 label')
+    if (horizon.order !== undefined && typeof horizon.order !== 'number') throw new Error('horizon ' + horizon.id + ' 的 order 必须是数字')
+    horizonIds.add(horizon.id)
+  }
+  if (!Array.isArray(data.directions)) throw new Error('缺少 directions 数组')
+  const ids = new Set()
+  for (const direction of data.directions) {
+    if (typeof direction?.id !== 'string' || direction.id === '') throw new Error('directions[].id 必须是非空字符串')
+    if (ids.has(direction.id)) throw new Error('directions 里重复的 id：' + direction.id)
+    if (typeof direction.label !== 'string' || direction.label === '') throw new Error('方向 ' + direction.id + ' 缺少 label')
+    if (!horizonIds.has(direction.horizon)) throw new Error('方向 ' + direction.id + ' 的 horizon 不存在：' + direction.horizon)
+    for (const field of ['summary', 'rationale']) {
+      if (direction[field] !== undefined && typeof direction[field] !== 'string') throw new Error('方向 ' + direction.id + ' 的 ' + field + ' 必须是字符串')
+    }
+    if (direction.relatedModules !== undefined) {
+      if (!Array.isArray(direction.relatedModules) || direction.relatedModules.some(id => typeof id !== 'string')) {
+        throw new Error('方向 ' + direction.id + ' 的 relatedModules 必须是字符串数组')
+      }
+    }
+    if (direction.sourceDocs !== undefined) {
+      if (!Array.isArray(direction.sourceDocs) || direction.sourceDocs.some(doc => typeof doc !== 'string')) {
+        throw new Error('方向 ' + direction.id + ' 的 sourceDocs 必须是字符串数组')
+      }
+    }
+    ids.add(direction.id)
+  }
+}
+
+function readRoadmap(root, roadmapPath) {
+  try {
+    const raw = fs.readFileSync(path.join(root, roadmapPath), 'utf8')
+    if (raw.length > MAX_FILE_BYTES) throw new Error('路线图文件超过 1 MB')
+    const data = JSON.parse(raw)
+    validateRoadmap(data)
+    return { roadmap: data, error: undefined }
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ENOENT') return { roadmap: null, error: undefined }
+    const reason = error instanceof Error ? error.message : String(error)
+    return { roadmap: null, error: '无法读取 ' + roadmapPath + '：' + reason }
+  }
+}
+
+function readReference(root, referencePath) {
+  try {
+    const raw = fs.readFileSync(path.join(root, referencePath), 'utf8')
+    if (raw.length > MAX_FILE_BYTES) throw new Error('长期参考文件超过 1 MB')
+    const data = JSON.parse(raw)
+    if (data === null || typeof data !== 'object' || !Array.isArray(data.items)) throw new Error('缺少 items 数组')
+    const items = data.items.filter(id => typeof id === 'string')
+    return { reference: { items }, error: undefined }
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ENOENT') return { reference: { items: [] }, error: undefined }
+    const reason = error instanceof Error ? error.message : String(error)
+    return { reference: { items: [] }, error: '无法读取 ' + referencePath + '：' + reason }
+  }
+}
+
+function writeReference(root, referencePath, items) {
+  const absolute = path.join(root, referencePath)
+  const directory = path.dirname(absolute)
+  fs.mkdirSync(directory, { recursive: true })
+  const payload = JSON.stringify({ schemaVersion: 1, updatedAt: new Date().toISOString(), items }, null, 2) + '\n'
+  const temporary = absolute + '.tmp-' + process.pid + '-' + Date.now()
+  fs.writeFileSync(temporary, payload, 'utf8')
+  fs.renameSync(temporary, absolute)
+}
+
 function buildIndex(ctx, config, query) {
   const { root, sessionId, projects } = resolveRoot(ctx, config, query)
   if (!isDirectory(root)) throw new Error(`项目目录不可用：${root}`)
@@ -468,6 +550,8 @@ function buildIndex(ctx, config, query) {
 
   const mapRead = readMap(root, config.mapPath)
   const layoutRead = readLayout(root, config.layoutPath)
+  const roadmapRead = readRoadmap(root, config.roadmapPath)
+  const referenceRead = readReference(root, config.referencePath)
   const map = mapRead.map
   return {
     ok: true,
@@ -482,6 +566,8 @@ function buildIndex(ctx, config, query) {
       devlogPath: config.devlogPath,
       projectPath: config.projectPath,
       layoutPath: config.layoutPath,
+      roadmapPath: config.roadmapPath,
+      referencePath: config.referencePath,
     },
     docs,
     devlog: fileMeta(root, config.devlogPath),
@@ -491,6 +577,10 @@ function buildIndex(ctx, config, query) {
     mapError: mapRead.error ?? null,
     layout: layoutRead.layout,
     layoutError: layoutRead.error ?? null,
+    roadmap: roadmapRead.roadmap,
+    roadmapError: roadmapRead.error ?? null,
+    longTermReference: referenceRead.reference,
+    referenceError: referenceRead.error ?? null,
     generatedAt: new Date().toISOString(),
   }
 }
@@ -565,6 +655,27 @@ function serveStatic(pathname) {
   }
 }
 
+function sendJson(res, status, payload) {
+  const body = JSON.stringify(payload)
+  res.writeHead(status, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'content-length': Buffer.byteLength(body),
+  })
+  res.end(body)
+}
+
+async function readBody(req, limit) {
+  const chunks = []
+  let total = 0
+  for await (const chunk of req) {
+    total += chunk.length
+    if (total > limit) throw new Error('请求体超过 64 KB')
+    chunks.push(chunk)
+  }
+  return Buffer.concat(chunks).toString('utf8')
+}
+
 function tokenMatches(expected, supplied) {
   if (typeof supplied !== 'string') return false
   const left = Buffer.from(expected)
@@ -621,6 +732,38 @@ export function apply(ctx, rawConfig = {}) {
         return json({ ok: true, root, url: launchUrl(root, sessionId) })
       } catch (error) {
         return problem(error instanceof Error ? error.message : String(error))
+      }
+    },
+  }))
+
+  // --- One narrow write: the user's curated long-term reference -------------
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: `${API_PREFIX}/reference`,
+    handler: async (req, res) => {
+      const url = new URL(req.url ?? '', 'http://localhost')
+      if (req.method !== 'POST') {
+        sendJson(res, 405, { ok: false, error: 'method not allowed' })
+        return
+      }
+      if (!tokenMatches(accessToken, url.searchParams.get('token') ?? '')) {
+        sendJson(res, 403, { ok: false, error: '链接已失效，请从 DSH 重新打开项目看板' })
+        return
+      }
+      try {
+        const { root } = resolveRoot(ctx, config, url.searchParams)
+        const roadmapRead = readRoadmap(root, config.roadmapPath)
+        if (roadmapRead.roadmap === null) throw new Error(roadmapRead.error ?? '没有 roadmap.json，无法写入长期参考')
+        const allowed = new Set(roadmapRead.roadmap.directions.map(direction => direction.id))
+        const body = await readBody(req, 64 * 1024)
+        const parsed = JSON.parse(body)
+        if (!Array.isArray(parsed.items)) throw new Error('items 必须是数组')
+        const items = [...new Set(parsed.items)]
+        if (items.some(id => typeof id !== 'string' || !allowed.has(id))) throw new Error('items 里有未知的长期方向 id')
+        writeReference(root, config.referencePath, items)
+        sendJson(res, 200, { ok: true, items })
+      } catch (error) {
+        sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : String(error) })
       }
     },
   }))

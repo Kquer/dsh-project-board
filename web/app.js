@@ -42,6 +42,7 @@ const state = {
   docFilter: '',
   docs: { selected: null, content: null, error: null, mtimeMs: 0, lastPath: null, renderKey: null },
   log: { content: null, error: null, mtimeMs: 0, loaded: false },
+  longterm: { saving: false },
   layoutLoadedFor: null,
   graph: {
     model: null,
@@ -49,6 +50,7 @@ const state = {
     scope: null,
     subsystem: null,
     archSelected: null,
+    showLater: false,
     selectedAttribute: null,
     selectedFlow: null,
     flowStep: 0,
@@ -657,6 +659,156 @@ function splitLog(text) {
   return { preamble: preamble.join('\n').trim(), entries }
 }
 
+function renderLongterm() {
+  const main = $('lt-main')
+  const ref = $('lt-ref')
+  if (main === null || ref === null) return
+  const mainScroll = main.scrollTop
+  const refScroll = ref.scrollTop
+  clear(main)
+  clear(ref)
+  const index = state.index
+  const roadmap = index?.roadmap
+  const directions = Array.isArray(roadmap?.directions) ? roadmap.directions : []
+  const horizons = [...(Array.isArray(roadmap?.horizons) ? roadmap.horizons : [])].sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
+  const selected = new Set(Array.isArray(index?.longTermReference?.items) ? index.longTermReference.items : [])
+  const count = $('count-longterm')
+  if (count !== null) count.textContent = String(directions.length)
+
+  const meta = $('lt-meta')
+  if (meta !== null) {
+    meta.textContent = roadmap
+      ? `${roadmap.generator || 'AI'} · 生成于 ${roadmap.generatedAt || '未知'} · ${directions.length} 条建议${roadmap.note ? ` · ${roadmap.note}` : ''}`
+      : '由 AI 根据 docs 与当前结构生成；建议不是承诺。'
+  }
+
+  ref.append(el('h3', { text: '长期参考' }))
+  ref.append(el('div', { class: 'sub', text: `${selected.size} 条已选 · 写入 ${index?.paths?.referencePath || 'docs/board/long-term-reference.json'}` }))
+
+  if (index?.roadmapError) {
+    main.append(el('div', { class: 'lt-error', text: index.roadmapError }))
+  }
+  if (!roadmap || directions.length === 0) {
+    main.append(el('div', { class: 'lt-empty' },
+      el('strong', { text: index?.roadmapError ? '长期方向数据有误' : '还没有生成长期方向' }),
+      el('div', { text: '在对话里说「生成长期开发方向」，AI 会读取 docs/reference 与当前 project-map，生成 docs/board/roadmap.json；也可以点右上角「复制生成指令」。' }),
+    ))
+    ref.append(el('div', { class: 'lt-ref-empty', text: '长期方向生成后，可在卡片上点「加入长期参考」。' }))
+    return
+  }
+
+  const byHorizon = new Map(horizons.map(horizon => [horizon.id, []]))
+  for (const direction of directions) {
+    if (!byHorizon.has(direction.horizon)) byHorizon.set(direction.horizon, [])
+    byHorizon.get(direction.horizon).push(direction)
+  }
+  for (const horizon of horizons) {
+    const items = byHorizon.get(horizon.id) || []
+    if (items.length === 0) continue
+    const section = el('section', { class: 'lt-horizon' },
+      el('h3', {}, horizon.label, el('span', { text: `${items.length} 条` })),
+      el('div', { class: 'lt-grid' }),
+    )
+    const grid = section.querySelector('.lt-grid')
+    for (const direction of items) {
+      const isSelected = selected.has(direction.id)
+      const card = el('article', { class: `lt-card${isSelected ? ' selected' : ''}` })
+      card.append(el('div', { class: 'lt-card-head' },
+        el('h4', { text: direction.label }),
+        el('span', { class: 'horizon', text: horizon.label }),
+      ))
+      card.append(el('p', { text: direction.summary || '' }))
+      if (direction.rationale) card.append(el('div', { class: 'why' }, el('b', { text: '为什么：' }), direction.rationale))
+      if (Array.isArray(direction.relatedModules) && direction.relatedModules.length > 0) {
+        card.append(el('div', { class: 'chips' }, direction.relatedModules.map(id => {
+          const module = state.graph.model?.byId.get(id)
+          return el('button', {
+            class: 'chip',
+            title: id,
+            onclick: () => { setView('structure'); jumpToModule(id) },
+          }, module?.label || id)
+        })))
+      }
+      if (Array.isArray(direction.sourceDocs) && direction.sourceDocs.length > 0) {
+        card.append(el('div', { class: 'docs', text: direction.sourceDocs.join('  ·  ') }))
+      }
+      card.append(el('div', { class: 'lt-card-actions' },
+        el('button', {
+          class: `btn small${isSelected ? ' on' : ''}`,
+          disabled: state.longterm.saving,
+          text: isSelected ? '已在长期参考' : '加入长期参考',
+          onclick: () => toggleReference(direction.id),
+        }),
+      ))
+      grid.append(card)
+    }
+    main.append(section)
+  }
+
+  const selectedDirections = directions.filter(direction => selected.has(direction.id))
+  if (selectedDirections.length === 0) {
+    ref.append(el('div', { class: 'lt-ref-empty', text: '还没有选中任何长期方向。在左侧卡片点「加入长期参考」，这里会作为长期参考持续保存。' }))
+  } else {
+    for (const direction of selectedDirections) {
+      const horizon = horizons.find(item => item.id === direction.horizon)
+      ref.append(el('div', { class: 'lt-ref-item' },
+        el('div', { class: 'row' },
+          el('div', {},
+            el('b', { text: direction.label }),
+            el('small', { text: `${horizon?.label || direction.horizon} · ${direction.summary || ''}` }),
+          ),
+          el('button', { class: 'btn small', text: '移除', disabled: state.longterm.saving, onclick: () => toggleReference(direction.id) }),
+        ),
+      ))
+    }
+  }
+  if (index?.referenceError) ref.append(el('div', { class: 'lt-error', text: index.referenceError, style: 'margin-top:10px' }))
+  main.scrollTop = mainScroll
+  ref.scrollTop = refScroll
+}
+
+async function toggleReference(id) {
+  if (state.longterm.saving) return
+  const index = state.index
+  if (index === null) return
+  const current = new Set(Array.isArray(index.longTermReference?.items) ? index.longTermReference.items : [])
+  if (current.has(id)) current.delete(id)
+  else current.add(id)
+  state.longterm.saving = true
+  renderLongterm()
+  try {
+    const response = await fetch(`./api/reference?${apiQuery({ root: state.root })}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ items: [...current] }),
+    })
+    const body = await response.json().catch(() => ({}))
+    if (!response.ok || body.ok !== true) throw new Error(body.error || `HTTP ${response.status}`)
+    state.index.longTermReference = { items: body.items }
+    state.index.referenceError = null
+    toast(current.has(id) ? '已加入长期参考' : '已移出长期参考')
+  } catch (error) {
+    toast(`保存失败：${error instanceof Error ? error.message : String(error)}`)
+  } finally {
+    state.longterm.saving = false
+    renderLongterm()
+  }
+}
+
+function exportReference() {
+  const items = Array.isArray(state.index?.longTermReference?.items) ? state.index.longTermReference.items : []
+  download('long-term-reference.json', JSON.stringify({
+    schemaVersion: 1,
+    updatedAt: new Date().toISOString(),
+    items,
+  }, null, 2), 'application/json')
+  toast('长期参考已导出')
+}
+
+function copyGenerationPrompt() {
+  copyText('请根据 docs/reference 下的技术文档和玩法文档，以及 docs/board/project-map.json 的当前结构，重新生成 docs/board/roadmap.json 的长期开发方向。保持建议性质：不要替我决定玩法、数值或优先级；每条方向写清 summary、rationale、relatedModules、sourceDocs，并标 horizon（next/mid/later）。')
+}
+
 // -------------------------------------------------------------------- graph
 
 function nodeWidth(module) {
@@ -704,6 +856,7 @@ function buildGraphModel(index) {
     label: subsystem.label,
     summary: typeof subsystem.summary === 'string' ? subsystem.summary : '',
     concern: typeof subsystem.concern === 'string' ? subsystem.concern : 'gameplay',
+    horizon: typeof subsystem.horizon === 'string' ? subsystem.horizon : 'current',
     order: Number.isFinite(subsystem.order) ? subsystem.order : index_ + 1,
     modules: Array.isArray(subsystem.modules) ? subsystem.modules.filter(id => byId.has(id)) : [],
   })).sort((left, right) => left.order - right.order)
@@ -1412,7 +1565,10 @@ function statusCountsFor(members) {
 
 function buildArch(model) {
   const cards = []
-  for (const subsystem of model.subsystems) {
+  const subsystems = state.graph.showLater
+    ? model.subsystems
+    : model.subsystems.filter(subsystem => subsystem.horizon !== 'later')
+  for (const subsystem of subsystems) {
     const members = expandSubsystem(model, subsystem)
     const memberIds = new Set(members.map(module => module.id))
     const counts = statusCountsFor(members)
@@ -1496,6 +1652,9 @@ function renderArch() {
   const arch = buildArch(model)
   state.graph.arch = arch
   state.graph.archLayout = arch
+  if (state.graph.archSelected !== null && !arch.cards.some(card => card.subsystem.id === state.graph.archSelected)) {
+    state.graph.archSelected = null
+  }
   const query = state.graph.search.trim().toLowerCase()
   const selected = state.graph.archSelected
   clear(canvas)
@@ -1856,7 +2015,8 @@ function renderArchInspector(box, model) {
       box.append(el('p', { class: 'empty', text: '还没有概念子系统。在 project-map.json 的 subsystems 里定义渲染、移动、卡牌等模块。' }))
       return
     }
-    for (const subsystem of model.subsystems) {
+    const visibleSubsystems = state.graph.arch?.cards.map(card => card.subsystem) || model.subsystems
+    for (const subsystem of visibleSubsystems) {
       const members = expandSubsystem(model, subsystem)
       const counts = statusCountsFor(members)
       const concern = CONCERNS[subsystem.concern] || CONCERNS.gameplay
@@ -1867,6 +2027,20 @@ function renderArchInspector(box, model) {
       },
         el('span', {}, subsystem.label, el('span', { class: 'muted', text: ` · ${concern.label}` })),
         el('small', {}, `${members.length} 个模块 · 完成 ${counts.done}`),
+      ))
+    }
+    const laterCount = model.subsystems.filter(subsystem => subsystem.horizon === 'later').length
+    if (laterCount > 0) {
+      box.append(el('div', { class: 'actions' },
+        el('button', {
+          class: 'btn small',
+          text: state.graph.showLater ? '只看当前 / 短期' : `显示长期子系统（${laterCount}）`,
+          onclick: () => {
+            state.graph.showLater = !state.graph.showLater
+            renderArch()
+            renderInspector()
+          },
+        }),
       ))
     }
     box.append(el('p', { class: 'empty', style: 'margin-top:12px' }, '双击画布上的子系统卡片进入模块依赖；切换「依赖」可看全部模块。'))
@@ -2531,7 +2705,7 @@ function setView(view) {
   for (const button of document.querySelectorAll('.tab')) {
     button.setAttribute('aria-selected', String(button.dataset.view === view))
   }
-  for (const name of ['docs', 'structure', 'log']) {
+  for (const name of ['docs', 'structure', 'longterm', 'log']) {
     $(`view-${name}`).hidden = name !== view
   }
   if (view === 'structure') {
@@ -2549,6 +2723,7 @@ function setView(view) {
     }
   }
   if (view === 'log') loadLog()
+  if (view === 'longterm') renderLongterm()
 }
 
 function renderAll() {
@@ -2556,6 +2731,7 @@ function renderAll() {
   renderDocList()
   renderDocPane()
   rebuildGraph()
+  renderLongterm()
 }
 
 // -------------------------------------------------------------------- load
@@ -2698,6 +2874,8 @@ function wireUi() {
   })
   $('export-layout').addEventListener('click', exportLayout)
   $('export-svg').addEventListener('click', exportSvg)
+  $('lt-prompt').addEventListener('click', copyGenerationPrompt)
+  $('lt-export').addEventListener('click', exportReference)
   $('toggle-layers').addEventListener('click', () => {
     const menu = $('layer-menu')
     menu.hidden = !menu.hidden

@@ -47,6 +47,9 @@
       <button class="tab" data-view="structure" role="tab" aria-selected="false">
         项目结构 <b id="count-structure" class="count">0</b>
       </button>
+      <button class="tab" data-view="longterm" role="tab" aria-selected="false">
+        长期方向 <b id="count-longterm" class="count">0</b>
+      </button>
       <button class="tab" data-view="log" role="tab" aria-selected="false">开发日志</button>
       <span class="spacer"></span>
       <span class="readonly-tag" title="插件只读取项目文件，不会修改文档">只读</span>
@@ -103,6 +106,23 @@
         </div>
 
         <aside class="inspector" id="inspector" aria-live="polite"></aside>
+      </section>
+
+      <section class="view longterm" id="view-longterm" role="tabpanel" aria-label="建议长期开发方向" hidden>
+        <header class="lt-header">
+          <div class="lt-heading">
+            <h2>建议长期开发方向</h2>
+            <p id="lt-meta">由 AI 根据 docs 与当前结构生成；建议不是承诺。</p>
+          </div>
+          <div class="lt-header-actions">
+            <button class="btn small" id="lt-prompt">复制生成指令</button>
+            <button class="btn small" id="lt-export">导出长期参考</button>
+          </div>
+        </header>
+        <div class="lt-body">
+          <main class="lt-main" id="lt-main"></main>
+          <aside class="lt-ref" id="lt-ref"></aside>
+        </div>
       </section>
 
       <section class="view log" id="view-log" role="tabpanel" aria-label="开发日志" hidden>

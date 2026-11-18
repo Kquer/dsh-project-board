@@ -4,13 +4,14 @@
 
 DSH 右侧栏只保留一个启动器；真正的主界面是**独立网页**：在任意浏览器全屏打开，查看当前项目的参考文档、可缩放拖拽的模块依赖画布、开发日志。插件不会修改项目文件。
 
-## 三个区域
+## 四个区域
 
 | 区域 | 默认数据源 | 行为 |
 |---|---|---|
 | 参考文档 | `docs/reference/**/*.md` | 只读 Markdown，按目录分组；支持参考目录下的图片 |
 | 项目结构 | `docs/board/project-map.json` | 默认自上而下架构（概念子系统 → 模块），另有依赖 / 数据流 / 流程视图；缩放、平移、筛选、聚焦、导出 SVG/布局 |
 | 开发日志 | `docs/DEVLOG.md` | 按 `##` 条目折叠，最新一条默认展开 |
+| 长期方向 | `docs/board/roadmap.json` | AI 按需生成；按 horizon 分组，右侧「长期参考」可勾选长期内容。长期方向默认不进入当前架构。 |
 
 看板会跟随**当前会话的工作目录**。切换到另一个 DSH 工作区时自动解析那个项目；也可以用页面顶部的项目切换器，打开 DSH 已登记的其他 Workspace。
 
@@ -46,7 +47,7 @@ DSH 右侧栏只保留一个启动器；真正的主界面是**独立网页**：
 git clone git@github.com:Kquer/dsh-project-board.git
 cd dsh-project-board
 node --check index.js client.js web/app.js
-git tag -a v0.2.1 -m "dsh-project-board 0.2.1"   # 下一次发布
+git tag -a v0.3.1 -m "dsh-project-board 0.3.1"   # 下一次发布
 git push origin main --tags
 ```
 
@@ -79,6 +80,8 @@ profile 里是目录链接，修改插件不用重装；Host 代码改动需要�
 | `devlogPath` | `docs/DEVLOG.md` | 开发日志 |
 | `projectPath` | `docs/PROJECT.md` | 允许只读接口读取（可选） |
 | `layoutPath` | `docs/board/layout.json` | 可选的仓库内布局文件；浏览器本地布局会覆盖它 |
+| `roadmapPath` | `docs/board/roadmap.json` | AI 生成的长期方向；「长期方向」页签读取它 |
+| `referencePath` | `docs/board/long-term-reference.json` | 用户在长期方向页选出的长期参考；插件**唯一**写入的文件，且只在用户点击时写入 |
 
 相对路径都相对项目根目录，且不能越界。
 
@@ -92,7 +95,9 @@ profile 里是目录链接，修改插件不用重装；Host 代码改动需要�
 │   │   ├── INDEX.md
 │   │   └── assets/                # 文档引用的图片
 │   ├── board/
-│   │   ├── project-map.json       # 模块、分层、依赖、状态
+│   │   ├── project-map.json       # 当前模块、依赖、子系统、属性、流程
+│   │   ├── roadmap.json           # AI 生成的长期方向（按需）
+│   │   ├── long-term-reference.json  # 用户选中的长期参考（插件写入）
 │   │   └── layout.json            # 可选的导出布局
 │   ├── PROJECT.md
 │   └── DEVLOG.md
@@ -220,10 +225,16 @@ DSH 的 **Plugins → Discover** 读取用户自己添加的索引，没有官�
 3. 把索引 JSON 托管到 HTTPS 地址（GitHub Pages 或 raw）。
 4. 用户在 **Plugins → Discover → Index sources** 添加这个地址。
 
+## 长期方向与长期参考
+
+长期想法放在 `docs/board/roadmap.json`，不混进当前架构。**长期方向**页签只读它，不做后台生成；要（重新）生成，就在对话里让 AI 根据 `docs/reference/` 和当前 `project-map.json` 生成，或点页签里的「复制生成指令」。架构视图默认隐藏 `horizon: later` 的子系统，需要时可点检查器里的「显示长期子系统」。
+
+每张方向卡片有「加入长期参考」：只写入 `docs/board/long-term-reference.json`（校验方向 id、原子写、token 保护的 POST），`docs/reference/` 仍然完全不写。把这个文件提交到仓库，就能和同事共享长期参考。方向、时间尺度都是建议，不是承诺。
+
 ## 安全与只读保证
 
 - 网页由本机 DSH 的 web server 提供。静态壳公开；所有数据接口都要求页面 URL 里的随机进程令牌。
-- 数据接口只读：扫描文档目录、解析结构图和日志。插件没有写路由。
+- 数据接口除一个显式的长期参考 POST 外只读；该路由只接受 roadmap 里已知的方向 id，只写配置的 `referencePath`。
 - 文档接口只允许参考目录、`DEVLOG.md`、`PROJECT.md`，并用 `realpath` 防越界；图片只允许参考目录下的常见位图格式。
 
 ## 限制
