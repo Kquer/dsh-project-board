@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Project board",
+    "description": "Shows the current Session workspace in three areas: read-only reference docs, a structure canvas, and the development log. The canvas supports dependency drill-down, key-attribute data flow, and numbered execution flows. The main UI is a standalone full-screen web app; the DSH right sidebar keeps only a launcher. Defaults to docs/reference, docs/board/project-map.json, and docs/DEVLOG.md; override in the plugin config. The plugin only reads project files."
+  }
+}

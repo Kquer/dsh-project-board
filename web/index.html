@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>项目看板</title>
+  <link rel="stylesheet" href="./app.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 36 36">
+            <rect x="5.5" y="5" width="25" height="8" rx="2.6" fill="currentColor" opacity=".95"></rect>
+            <rect x="5.5" y="14.5" width="25" height="7" rx="2.4" fill="currentColor" opacity=".72"></rect>
+            <rect x="5.5" y="23.5" width="25" height="7" rx="2.4" fill="currentColor" opacity=".48"></rect>
+            <circle cx="9.6" cy="9" r="1.25" fill="var(--bg)"></circle>
+            <circle cx="9.6" cy="18" r="1.1" fill="var(--bg)" opacity=".9"></circle>
+            <circle cx="9.6" cy="27" r="1.1" fill="var(--bg)" opacity=".8"></circle>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <strong>项目看板</strong>
+          <small id="project-path">—</small>
+        </span>
+      </div>
+
+      <div class="project-switch" id="project-switch" hidden>
+        <label for="project-select">项目</label>
+        <select id="project-select" aria-label="切换项目"></select>
+      </div>
+
+      <div class="meta" id="top-meta"></div>
+
+      <div class="top-actions">
+        <span class="conn" id="conn"><i></i><span id="conn-text">连接中</span></span>
+        <button class="btn" id="refresh" title="重新读取项目文件">刷新</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="看板区域">
+      <button class="tab" data-view="docs" role="tab" aria-selected="true">
+        参考文档 <b id="count-docs" class="count">0</b>
+      </button>
+      <button class="tab" data-view="structure" role="tab" aria-selected="false">
+        项目结构 <b id="count-structure" class="count">0</b>
+      </button>
+      <button class="tab" data-view="log" role="tab" aria-selected="false">开发日志</button>
+      <span class="spacer"></span>
+      <span class="readonly-tag" title="插件只读取项目文件，不会修改文档">只读</span>
+    </nav>
+
+    <main class="main">
+      <section class="view docs" id="view-docs" role="tabpanel" aria-label="参考文档">
+        <aside class="doc-side">
+          <div class="doc-search">
+            <input id="doc-filter" type="search" placeholder="筛选文档…" aria-label="筛选文档">
+          </div>
+          <nav class="doc-list" id="doc-list" aria-label="文档列表"></nav>
+          <div class="doc-hint">把 Markdown 放进 <code id="ref-dir">docs/reference</code> 即会自动出现。</div>
+        </aside>
+        <article class="doc-pane" id="doc-pane" aria-live="polite"></article>
+      </section>
+
+      <section class="view structure" id="view-structure" role="tabpanel" aria-label="项目结构" hidden>
+        <div class="toolbar">
+          <nav class="crumbs" id="crumbs" aria-label="模块层级"></nav>
+          <div class="mode-switch" id="mode-switch" role="group" aria-label="视图模式">
+            <button type="button" data-mode="arch" class="on">架构</button>
+            <button type="button" data-mode="deps">依赖</button>
+            <button type="button" data-mode="data">数据流</button>
+            <button type="button" data-mode="flow">流程</button>
+          </div>
+          <select id="flow-select" class="flow-select" aria-label="执行流程" hidden></select>
+          <div class="search">
+            <input id="graph-search" type="search" placeholder="搜索模块 / 按 Enter 定位…" aria-label="搜索模块">
+          </div>
+          <div class="tool-group" role="group" aria-label="缩放">
+            <button class="icon-btn" id="zoom-out" title="缩小（-）" aria-label="缩小">−</button>
+            <span id="zoom-hud" class="zoom-hud">100%</span>
+            <button class="icon-btn" id="zoom-in" title="放大（+）" aria-label="放大">＋</button>
+            <button class="icon-btn" id="fit" title="适应画布（0）" aria-label="适应画布">⤢</button>
+          </div>
+          <div class="tool-group" role="group" aria-label="布局与导出">
+            <button class="btn small" id="toggle-layers" aria-expanded="false">分层</button>
+            <button class="btn small" id="reset-layout" title="清除手动拖动，恢复自动布局">重置布局</button>
+            <button class="btn small" id="export-svg" title="把当前画布导出为 SVG">导出 SVG</button>
+            <button class="btn small" id="export-layout" title="导出手动布局 JSON，可提交到仓库">导出布局</button>
+          </div>
+          <div class="chips" id="status-filters" role="group" aria-label="按状态筛选"></div>
+          <div class="popover" id="layer-menu" hidden></div>
+        </div>
+
+        <div class="canvas-wrap" id="canvas-wrap">
+          <svg id="canvas" role="application" aria-label="模块依赖画布：滚轮缩放，拖拽空白平移，拖拽节点调整位置，双击节点聚焦"></svg>
+          <div class="canvas-empty" id="canvas-empty" hidden></div>
+          <div class="hud">
+            <span class="legend" id="legend"></span>
+            <span class="canvas-tip">滚轮缩放 · 拖空白平移 · 拖节点调位置 · 双击聚焦</span>
+          </div>
+        </div>
+
+        <aside class="inspector" id="inspector" aria-live="polite"></aside>
+      </section>
+
+      <section class="view log" id="view-log" role="tabpanel" aria-label="开发日志" hidden>
+        <div class="log-pane" id="log-pane"></div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" hidden role="status"></div>
+    <div class="fatal" id="fatal" hidden></div>
+  </div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

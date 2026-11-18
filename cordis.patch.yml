@@ -1,0 +1,11 @@
+- insert:
+    - id: project-board
+      name: 'dsh-project-board'
+      config:
+        # Empty root = derive the project from the current Session's working directory.
+        root: ''
+        referenceDir: 'docs/reference'
+        mapPath: 'docs/board/project-map.json'
+        devlogPath: 'docs/DEVLOG.md'
+        projectPath: 'docs/PROJECT.md'
+        layoutPath: 'docs/board/layout.json'

@@ -1,0 +1,50 @@
+{
+  "name": "dsh-project-board",
+  "version": "0.2.0",
+  "description": "A project board for DeepSeek Harness: read-only docs, a zoomable dependency-canvas of the architecture, and the development log, served as a full-screen web app and launched from DSH.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "web",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "README.md",
+    "README.zh.md",
+    "LICENSE",
+    "icon.svg",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "dsh": ">=0.2.2-rc.3 <0.3.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kquer/dsh-project-board.git"
+  },
+  "homepage": "https://github.com/Kquer/dsh-project-board#readme",
+  "bugs": {
+    "url": "https://github.com/Kquer/dsh-project-board/issues"
+  }
+}
