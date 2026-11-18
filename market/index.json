@@ -1,6 +1,9 @@
 {
   "format": 1,
-  "title": { "en": "Kquer's DSH plugins", "zh": "Kquer 的 DSH 插件" },
+  "title": {
+    "en": "Kquer's DSH plugins",
+    "zh": "Kquer 的 DSH 插件"
+  },
   "description": {
     "en": "A project board for DeepSeek Harness: docs, architecture canvas, attributes and flows.",
     "zh": "DeepSeek Harness 项目看板：文档、架构画布、关键属性与执行流程。"
@@ -8,27 +11,39 @@
   "plugins": [
     {
       "name": "dsh-project-board",
-      "title": { "en": "Project board", "zh": "项目看板" },
+      "title": {
+        "en": "Project board",
+        "zh": "项目看板"
+      },
       "description": {
         "en": "Read-only project docs plus a top-down architecture canvas, key-attribute data flow, and execution flows. Opens as a full-screen web app from DSH.",
         "zh": "只读项目文档 + 自上而下架构画布 + 关键属性数据流 + 执行流程；从 DSH 启动为全屏网页。"
       },
       "icon": "https://kquer.github.io/dsh-project-board/icon.svg",
       "author": "Kquer",
-      "repository": { "url": "https://github.com/Kquer/dsh-project-board" },
+      "repository": {
+        "url": "https://github.com/Kquer/dsh-project-board"
+      },
       "metadata": {
-        "keywords": ["project-board", "architecture", "documentation", "unity"]
+        "keywords": [
+          "project-board",
+          "architecture",
+          "documentation",
+          "unity"
+        ]
       },
       "versions": [
         {
-          "version": "0.2.0",
-          "publishTimestamp": 1795012559,
+          "version": "0.3.0",
+          "publishTimestamp": 1795015255,
           "source": {
             "type": "git",
             "url": "https://github.com/Kquer/dsh-project-board",
-            "commit": "4f970d50f8a603be4de18775ff64f36827c2a036"
+            "commit": "2912c8e4975edd6b60fcb5133d794582619d3e41"
           },
-          "engines": { "dsh": ">=0.2.2-rc.3 <0.3.0" }
+          "engines": {
+            "dsh": ">=0.2.2-rc.3 <0.3.0"
+          }
         }
       ]
     }
