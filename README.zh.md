@@ -53,6 +53,44 @@ git push origin main --tags
 
 改动时同步更新 `CHANGELOG.md` 和 `package.json` 的 `version`。项目侧继续维护自己的 `docs/reference`、`docs/board/project-map.json`、`docs/DEVLOG.md`；这个仓库只放插件本身。
 
+## 在另一台电脑安装
+
+仓库是公开的，不需要 GitHub 登录。
+
+### A. 通过 DSH Market（推荐）
+
+1. 在 DSH 的 **Plugins → 实验性插件** 中启用 **自定义插件索引**（`@deepseek-ai/dsh-experimental-plugin-market-bundle`）。
+2. 打开 **Plugins → 发现（Discover）→ 添加索引源**，填入：
+
+```text
+https://kquer.github.io/dsh-project-board/market/index.json
+```
+
+3. 在索引里安装 **项目看板 / Project board**，刷新 DSH 页面。
+
+### B. clone 后从本地目录安装
+
+```bash
+git clone https://github.com/Kquer/dsh-project-board.git
+```
+
+DSH 里 **Plugins → Add plugin** 选择 clone 下来的**仓库根目录**，启用后刷新。
+
+### 项目数据是分开的
+
+这个仓库只放插件。看板读取的是**当前会话的工作区**：
+
+```text
+<项目>/docs/reference/
+<项目>/docs/board/project-map.json
+<项目>/docs/board/roadmap.json
+<项目>/docs/DEVLOG.md
+```
+
+另一台电脑上需要把项目工作区也 checkout/复制过去，或者把插件的 `root` / `referenceDir` / `mapPath` 配到项目位置。没有这些文件时，看板能打开，但没有文档和结构图。
+
+要求 DSH `>=0.2.2-rc.3 <0.3.0`。
+
 ## 安装（本地目录）
 
 1. 把本目录放到机器的任意位置，例如 `<仓库>/plugins/dsh-project-board`。

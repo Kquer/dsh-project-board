@@ -53,6 +53,44 @@ git push origin main --tags
 
 Keep `CHANGELOG.md` current and bump `version` in `package.json`. The consuming project keeps its own `docs/reference`, `docs/board/project-map.json`, and `docs/DEVLOG.md`; this repository only ships the plugin.
 
+## Install on another computer
+
+The repository is public, so no GitHub credentials are needed.
+
+### A. Through DSH Market (recommended)
+
+1. In DSH, enable the shipped optional **Custom plugin indexes** (`@deepseek-ai/dsh-experimental-plugin-market-bundle`) under **Plugins → Experimental plugins**.
+2. Open **Plugins → Discover → Add index source** and add:
+
+```text
+https://kquer.github.io/dsh-project-board/market/index.json
+```
+
+3. Install **Project board** from the index and refresh the DSH page.
+
+### B. Clone and add the local folder
+
+```bash
+git clone https://github.com/Kquer/dsh-project-board.git
+```
+
+In DSH: **Plugins → Add plugin** → select the clone's root directory → enable → refresh.
+
+### Project data is separate
+
+This repository ships the plugin only. The board reads the **current Session workspace**:
+
+```text
+<project>/docs/reference/
+<project>/docs/board/project-map.json
+<project>/docs/board/roadmap.json
+<project>/docs/DEVLOG.md
+```
+
+Check out or copy the project workspace to the other computer, or set the plugin's `root` / `referenceDir` / `mapPath` config to the project location. Without those files the board opens but has no docs or structure.
+
+Requires DSH `>=0.2.2-rc.3 <0.3.0`.
+
 ## Install (local folder)
 
 1. Put this directory anywhere on the machine, for example `<repo>/plugins/dsh-project-board`.
