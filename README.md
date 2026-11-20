@@ -2,7 +2,7 @@
 
 A read-only project board for **DeepSeek Harness (DSH)**, built for projects whose design docs live in the repository.
 
-The DSH right sidebar keeps a small launcher. The real board is a **standalone web app**: it opens full screen in any browser, shows the current project's docs, a zoomable/draggable dependency canvas, and the development log. The plugin never writes project files.
+The DSH right sidebar keeps a small launcher. The real board is a **standalone web app**: it opens full screen in any browser, shows the current project's docs, a zoomable/draggable dependency canvas, the development log, and a manually generated AI context. Source docs stay read-only; writes are limited to derived board files and the user-curated long-term reference.
 
 ## What you get
 
@@ -230,7 +230,7 @@ Layout is stored in `localStorage` per project and per browser; a committed `doc
 - Put `docs/` in the same repository as the code and commit doc changes with the code change they describe.
 - Each collaborator clones the repository and runs DSH in that clone. The board reads the local working copy, so no token or GitHub API access is needed for private repositories.
 - Pull before starting; the board refreshes every 10 seconds and reloads a doc when its mtime changes.
-- Keep `docs/reference/` human-owned. If an AI assistant should not edit it, state that in `AGENTS.md`; this plugin is read-only regardless.
+- Keep `docs/reference/` human-owned. If an AI assistant should not edit it, state that in `AGENTS.md`; this plugin never writes it.
 - A committed `layout.json` avoids layout churn; treat it as a normal reviewed file.
 
 ## Publish to a DSH market index
@@ -289,7 +289,7 @@ Each roadmap card has **加入长期参考**. That writes only `docs/board/long-
 ## Security and read-only guarantees
 
 - The standalone page is served on the local DSH web server. The static shell is public; every data endpoint requires the random per-process token embedded in the page URL.
-- Data endpoints are read-only except the one explicit long-term-reference POST. That route accepts only known roadmap direction ids and writes only the configured `referencePath`.
+- Source docs are read-only. Writes are limited to derived `docs/board` files: the manual AI-context rebuild (`AI-CONTEXT.md`, `ai-context.json`, `generated/assets`, `flow-reference.json`) and the user-curated long-term reference. Neither path is user documentation.
 - The doc endpoint is whitelisted to the reference directory, `DEVLOG.md`, and `PROJECT.md`; `realpath` checks prevent escaping the project root. Images are limited to the reference directory and common raster formats.
 
 ## Limitations

@@ -1,6 +1,6 @@
 # dsh-project-board · 项目看板
 
-给 **DeepSeek Harness（DSH）** 用的只读项目看板。适合“文档和代码放在同一个仓库”的项目。
+给 **DeepSeek Harness（DSH）** 用的项目看板。用户文档只读；插件只写派生的看板文件和用户勾选的长期参考。适合“文档和代码放在同一个仓库”的项目。
 
 DSH 右侧栏只保留一个启动器；真正的主界面是**独立网页**：在任意浏览器全屏打开，查看当前项目的参考文档、可缩放拖拽的模块依赖画布、开发日志。插件不会修改项目文件。
 
@@ -230,7 +230,7 @@ profile 里是目录链接，修改插件不用重装；Host 代码改动需要�
 - `docs/` 跟代码放同一个仓库，文档改动和代码改动进同一个 commit / PR。
 - 每个人 clone 仓库，在本机 clone 里跑 DSH；看板读本地文件，私有库也不需要额外 token 或 GitHub API。
 - 开工前 `git pull`；看板每 10 秒自动刷新，正文按 mtime 增量重读。
-- `docs/reference/` 是用户维护区；即使 AI 参与，也建议在 `AGENTS.md` 里写死“只读”。插件本身没有任何写接口。
+- `docs/reference/` 是用户维护区；即使 AI 参与，也建议在 `AGENTS.md` 里写死“只读”。插件不会写它。
 - `layout.json` 当普通受审文件提交即可，避免每个人排版不同。
 
 ## 发布到 DSH 插件索引
@@ -289,7 +289,7 @@ DSH 的 **Plugins → Discover** 读取用户自己添加的索引，没有官�
 ## 安全与只读保证
 
 - 网页由本机 DSH 的 web server 提供。静态壳公开；所有数据接口都要求页面 URL 里的随机进程令牌。
-- 数据接口除一个显式的长期参考 POST 外只读；该路由只接受 roadmap 里已知的方向 id，只写配置的 `referencePath`。
+- 用户文档只读。写入仅限派生文件：手动 AI 上下文重建（`AI-CONTEXT.md`、`ai-context.json`、`generated/assets`、`flow-reference.json`）和用户勾选的长期参考；这两条路径都不是用户文档。
 - 文档接口只允许参考目录、`DEVLOG.md`、`PROJECT.md`，并用 `realpath` 防越界；图片只允许参考目录下的常见位图格式。
 
 ## 限制
