@@ -16,12 +16,13 @@
  *   GET /api/project-board.index            compact launcher data
  *   GET /api/project-board.launch           the tokenized board URL
  *
- * Nothing here writes project files.
+ * The only writes are the curated long-term reference and the manual AI-context rebuild.
  */
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
+import { buildContext, readContext } from './context.js'
 
 /** Required Host services. */
 export const inject = ['connection', 'webServer', 'sessions', 'workingDirectory']
@@ -42,6 +43,7 @@ const DEFAULTS = {
   layoutPath: 'docs/board/layout.json',
   roadmapPath: 'docs/board/roadmap.json',
   referencePath: 'docs/board/long-term-reference.json',
+  contextDir: 'docs/board',
 }
 
 const MAP_STATUSES = new Set(['done', 'partial', 'todo', 'unknown', 'blocked'])
@@ -123,6 +125,7 @@ function normalizeConfig(raw) {
     layoutPath: relativeConfigPath(input.layoutPath, DEFAULTS.layoutPath),
     roadmapPath: relativeConfigPath(input.roadmapPath, DEFAULTS.roadmapPath),
     referencePath: relativeConfigPath(input.referencePath, DEFAULTS.referencePath),
+    contextDir: relativeConfigPath(input.contextDir, DEFAULTS.contextDir),
   }
 }
 
@@ -552,6 +555,7 @@ function buildIndex(ctx, config, query) {
   const layoutRead = readLayout(root, config.layoutPath)
   const roadmapRead = readRoadmap(root, config.roadmapPath)
   const referenceRead = readReference(root, config.referencePath)
+  const contextRead = readContext(root, config.contextDir)
   const map = mapRead.map
   return {
     ok: true,
@@ -568,6 +572,7 @@ function buildIndex(ctx, config, query) {
       layoutPath: config.layoutPath,
       roadmapPath: config.roadmapPath,
       referencePath: config.referencePath,
+      contextDir: config.contextDir,
     },
     docs,
     devlog: fileMeta(root, config.devlogPath),
@@ -580,6 +585,7 @@ function buildIndex(ctx, config, query) {
     roadmap: roadmapRead.roadmap,
     roadmapError: roadmapRead.error ?? null,
     longTermReference: referenceRead.reference,
+    context: contextRead.summary,
     referenceError: referenceRead.error ?? null,
     generatedAt: new Date().toISOString(),
   }
@@ -732,6 +738,104 @@ export function apply(ctx, rawConfig = {}) {
         return json({ ok: true, root, url: launchUrl(root, sessionId) })
       } catch (error) {
         return problem(error instanceof Error ? error.message : String(error))
+      }
+    },
+  }))
+
+  // --- Manual document-context rebuild --------------------------------------
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: `${API_PREFIX}/pick-folder`,
+    handler: async (req, res) => {
+      const url = new URL(req.url ?? '', 'http://localhost')
+      if (req.method !== 'POST') { sendJson(res, 405, { ok: false, error: 'method not allowed' }); return }
+      if (!tokenMatches(accessToken, url.searchParams.get('token') ?? '')) {
+        sendJson(res, 403, { ok: false, error: '链接已失效，请从 DSH 重新打开项目看板' }); return
+      }
+      try {
+        const picker = ctx.get?.('directoryPicker') ?? ctx.directoryPicker
+        const capability = picker?.capability?.()
+        if (capability?.kind === 'native') {
+          const selected = await capability.pick(new AbortController().signal)
+          sendJson(res, 200, { ok: true, path: selected ?? null })
+          return
+        }
+        if (capability?.kind === 'browse') {
+          sendJson(res, 409, { ok: false, code: 'browse-only', error: '当前 DSH 没有原生文件夹选择器；请直接输入绝对路径。' })
+          return
+        }
+        sendJson(res, 501, { ok: false, error: 'DSH 没有可用的文件夹选择器；请直接输入绝对路径。' })
+      } catch (error) {
+        sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : String(error) })
+      }
+    },
+  }))
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: `${API_PREFIX}/reindex`,
+    handler: async (req, res) => {
+      const url = new URL(req.url ?? '', 'http://localhost')
+      if (req.method !== 'POST') { sendJson(res, 405, { ok: false, error: 'method not allowed' }); return }
+      if (!tokenMatches(accessToken, url.searchParams.get('token') ?? '')) {
+        sendJson(res, 403, { ok: false, error: '链接已失效，请从 DSH 重新打开项目看板' }); return
+      }
+      try {
+        const { root } = resolveRoot(ctx, config, url.searchParams)
+        const body = await readBody(req, 64 * 1024)
+        const parsed = JSON.parse(body)
+        if (typeof parsed.sourceDir !== 'string' || parsed.sourceDir.trim() === '') {
+          throw new Error('缺少 sourceDir')
+        }
+        const sourceDir = path.isAbsolute(parsed.sourceDir) ? parsed.sourceDir : path.resolve(root, parsed.sourceDir)
+        const summary = buildContext(root, sourceDir, config.contextDir)
+        sendJson(res, 200, { ok: true, ...summary })
+      } catch (error) {
+        sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : String(error) })
+      }
+    },
+  }))
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: `${API_PREFIX}/context-asset`,
+    handler: (req, res) => {
+      const url = new URL(req.url ?? '', 'http://localhost')
+      if (req.method !== 'GET') { sendJson(res, 405, { ok: false, error: 'method not allowed' }); return }
+      if (!tokenMatches(accessToken, url.searchParams.get('token') ?? '')) {
+        sendJson(res, 403, { ok: false, error: '链接已失效，请从 DSH 重新打开项目看板' }); return
+      }
+      try {
+        const { root } = resolveRoot(ctx, config, url.searchParams)
+        const relative = url.searchParams.get('path') ?? ''
+        if (!relative.startsWith(`${config.contextDir}/generated/`)) { sendJson(res, 403, { ok: false, error: '不允许读取该上下文资源' }); return }
+        const found = resolveInside(root, relative)
+        if (found === undefined || found.stat.size > MAX_ASSET_BYTES) { sendJson(res, 404, { ok: false, error: '资源不存在或过大' }); return }
+        const type = IMAGE_TYPES.get(path.extname(relative).toLowerCase()) ?? 'application/octet-stream'
+        res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store', 'content-length': found.stat.size })
+        res.end(fs.readFileSync(found.absolute))
+      } catch (error) {
+        sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : String(error) })
+      }
+    },
+  }))
+
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: `${API_PREFIX}/context`,
+    handler: (req, res) => {
+      const url = new URL(req.url ?? '', 'http://localhost')
+      if (req.method !== 'GET') { sendJson(res, 405, { ok: false, error: 'method not allowed' }); return }
+      if (!tokenMatches(accessToken, url.searchParams.get('token') ?? '')) {
+        sendJson(res, 403, { ok: false, error: '链接已失效，请从 DSH 重新打开项目看板' }); return
+      }
+      try {
+        const { root } = resolveRoot(ctx, config, url.searchParams)
+        const context = readContext(root, config.contextDir)
+        if (context.summary === null) { sendJson(res, 404, { ok: false, error: '还没有生成 AI 上下文' }); return }
+        sendJson(res, 200, { ok: true, summary: context.summary, markdown: context.markdown })
+      } catch (error) {
+        sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : String(error) })
       }
     },
   }))

@@ -47,7 +47,7 @@ This package is developed at [github.com/Kquer/dsh-project-board](https://github
 git clone git@github.com:Kquer/dsh-project-board.git
 cd dsh-project-board
 node --check index.js client.js web/app.js
-git tag -a v0.3.1 -m "dsh-project-board 0.3.1"   # for the next release
+git tag -a v0.4.1 -m "dsh-project-board 0.4.1"   # for the next release
 git push origin main --tags
 ```
 
@@ -119,7 +119,8 @@ The bundle patch sets these defaults. Override them in the plugin row's config:
 | `projectPath` | `docs/PROJECT.md` | Allowed in the read-only doc endpoint (optional). |
 | `layoutPath` | `docs/board/layout.json` | Optional committed manual layout; the browser merges it under its local layout. |
 | `roadmapPath` | `docs/board/roadmap.json` | AI-generated long-term directions; the **长期方向** tab reads it. |
-| `referencePath` | `docs/board/long-term-reference.json` | User-curated subset selected in the long-term tab; the only file the plugin writes, and only after an explicit click. |
+| `referencePath` | `docs/board/long-term-reference.json` | User-curated subset selected in the long-term tab; written only after an explicit click. |
+| `contextDir` | `docs/board` | Output directory for the manually generated AI context (`AI-CONTEXT.md`, `ai-context.json`, `generated/assets`). |
 
 Relative paths are resolved against the project root and may not escape it.
 
@@ -262,6 +263,22 @@ DSH's **Plugins → Discover** reads indexes that users add; there is no officia
 
 3. Host the JSON at an HTTPS URL (GitHub Pages or raw).
 4. Users add that URL under **Plugins → Discover → Index sources**.
+
+## Manual project-docs folder and AI context
+
+The board can parse a **project documentation folder** you choose, into one AI-readable file. Use the bar above the tabs:
+
+1. **选择文件夹 / Choose folder** opens the DSH native folder picker (or type an absolute path if the host has no native picker).
+2. **以当前项目文档文件夹更新状态 / Update from docs folder** parses the folder and writes:
+   - `docs/board/AI-CONTEXT.md` — one Markdown document an AI can read
+   - `docs/board/ai-context.json` — the same data in JSON
+   - `docs/board/generated/assets/` — images referenced by the context
+   - `docs/board/flow-reference.json` — the first `.pos` flow, when present
+3. The **AI 上下文** tab shows the generated Markdown.
+
+Supported: `.md`, `.markdown`, `.txt`, `.docx` (text + embedded images), `.pos` (ProcessOn/WPS flowchart), and images. `.doc`/PDF and other formats are reported as warnings. DOCX tables/shapes are not fully reconstructed; the source `.docx` remains the authority.
+
+This is **manual only**: the board no longer polls every 10 seconds. The button reads the source folder; it never writes to it, and it does not regenerate `project-map.json`. Treat the generated files as derived artifacts; regenerate them with the button instead of editing them by hand.
 
 ## Long-term directions and reference
 

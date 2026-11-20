@@ -110,6 +110,34 @@ code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, m
 .conn i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; }
 .conn.stale i { background: var(--amber); }
 
+.sourcebar {
+  flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 22px;
+  background: var(--panel); border-bottom: 1px solid var(--line); min-width: 0;
+}
+.sourcebar-label { flex: none; color: var(--text-3); font-size: 10.5px; letter-spacing: .02em; }
+.sourcebar input {
+  flex: 1; min-width: 120px; height: 30px; padding: 0 10px; border: 1px solid var(--line);
+  border-radius: 7px; background: var(--bg); color: var(--text); font-size: 11px;
+}
+.sourcebar input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.sourcebar .btn { height: 30px; flex: none; }
+.sourcebar .btn.primary { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.sourcebar-status { flex: none; color: var(--text-3); font-size: 10px; white-space: nowrap; }
+.sourcebar-status.ok { color: var(--green); }
+.sourcebar-status.bad { color: var(--red); }
+
+.context { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
+.context-head { flex: none; padding: 16px 24px 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.context-head h2 { margin: 0 0 3px; font-size: 16px; font-weight: 650; }
+.context-head p { margin: 0; color: var(--text-3); font-size: 11px; line-height: 1.6; }
+.context-pane {
+  flex: 1; min-height: 0; overflow: auto; padding: 24px 30px 70px;
+  width: min(100%, 980px); margin: 0 auto; font-size: 13px; line-height: 1.75;
+}
+.context-pane h1, .context-pane h2, .context-pane h3 { line-height: 1.35; }
+.context-pane pre { overflow: auto; }
+.context-pane img { max-width: 100%; height: auto; }
+
 /* ------------------------------------------------------------------ tabs */
 .tabs {
   flex: none; display: flex; align-items: center; gap: 2px;

@@ -47,7 +47,7 @@ DSH 右侧栏只保留一个启动器；真正的主界面是**独立网页**：
 git clone git@github.com:Kquer/dsh-project-board.git
 cd dsh-project-board
 node --check index.js client.js web/app.js
-git tag -a v0.3.1 -m "dsh-project-board 0.3.1"   # 下一次发布
+git tag -a v0.4.1 -m "dsh-project-board 0.4.1"   # 下一次发布
 git push origin main --tags
 ```
 
@@ -119,7 +119,8 @@ profile 里是目录链接，修改插件不用重装；Host 代码改动需要�
 | `projectPath` | `docs/PROJECT.md` | 允许只读接口读取（可选） |
 | `layoutPath` | `docs/board/layout.json` | 可选的仓库内布局文件；浏览器本地布局会覆盖它 |
 | `roadmapPath` | `docs/board/roadmap.json` | AI 生成的长期方向；「长期方向」页签读取它 |
-| `referencePath` | `docs/board/long-term-reference.json` | 用户在长期方向页选出的长期参考；插件**唯一**写入的文件，且只在用户点击时写入 |
+| `referencePath` | `docs/board/long-term-reference.json` | 用户在长期方向页选出的长期参考；只在用户点击时写入 |
+| `contextDir` | `docs/board` | 手动生成的 AI 上下文输出目录（`AI-CONTEXT.md`、`ai-context.json`、`generated/assets`） |
 
 相对路径都相对项目根目录，且不能越界。
 
@@ -262,6 +263,22 @@ DSH 的 **Plugins → Discover** 读取用户自己添加的索引，没有官�
 
 3. 把索引 JSON 托管到 HTTPS 地址（GitHub Pages 或 raw）。
 4. 用户在 **Plugins → Discover → Index sources** 添加这个地址。
+
+## 手动选择项目文档文件夹 + AI 上下文
+
+看板可以把**你选择的项目文档文件夹**解析成一个 AI 可直接读的文件。用页签上方的工具条：
+
+1. **选择文件夹**：打开 DSH 的原生文件夹选择器；没有原生选择器时直接输入绝对路径。
+2. **以当前项目文档文件夹更新状态**：解析该文件夹并生成：
+   - `docs/board/AI-CONTEXT.md`：一个 Markdown 上下文，AI 直接读；
+   - `docs/board/ai-context.json`：同样的机器可读数据；
+   - `docs/board/generated/assets/`：上下文引用的图片；
+   - `docs/board/flow-reference.json`：找到的第一个 `.pos` 流程。
+3. **AI 上下文**页签显示生成的 Markdown。
+
+支持：`.md`、`.markdown`、`.txt`、`.docx`（文本 + 内嵌图片）、`.pos`（ProcessOn/WPS 流程图）和图片。`.doc`/PDF 等会记 warning；DOCX 的表格/形状不会完整还原，源 docx 仍是权威。
+
+这是**手动更新**：不再每 10 秒轮询。按钮只读源文件夹，不写源目录，也不会重新生成 `project-map.json`。生成文件是派生结果，请用按钮重新生成，不要手改。
 
 ## 长期方向与长期参考
 

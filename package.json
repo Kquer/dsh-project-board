@@ -1,6 +1,6 @@
 {
   "name": "dsh-project-board",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A project board for DeepSeek Harness: read-only docs, a zoomable dependency-canvas of the architecture, and the development log, served as a full-screen web app and launched from DSH.",
   "license": "MIT",
   "type": "module",
@@ -14,6 +14,7 @@
   "files": [
     "index.js",
     "client.js",
+    "context.js",
     "web",
     "cordis.patch.yml",
     "locale/*.json",

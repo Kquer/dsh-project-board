@@ -1,6 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-11-20
+
+- Manual **project documentation folder** picker (DSH native chooser, absolute-path fallback).
+- **Update from docs folder** button parses `.md/.txt/.docx/.pos/images` into `docs/board/AI-CONTEXT.md` + `ai-context.json` and refreshes `flow-reference.json`.
+- New **AI 上下文** tab renders the generated Markdown; context images are served through a token-protected route.
+- Dependency-free DOCX text/image extraction and ProcessOn `.pos` flow extraction in the Host.
+- Removed the 10-second automatic poll; refresh and reindex are manual.
+
 ## 0.3.0 — 2026-11-18
+
 
 - Separate current/short-term structure from long-term suggestions.
 - New **长期方向** tab: AI-generated roadmap grouped by horizon, with why/related modules/source docs.

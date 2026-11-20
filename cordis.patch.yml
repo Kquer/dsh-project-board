@@ -11,3 +11,4 @@
         layoutPath: 'docs/board/layout.json'
         roadmapPath: 'docs/board/roadmap.json'
         referencePath: 'docs/board/long-term-reference.json'
+        contextDir: 'docs/board'

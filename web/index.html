@@ -50,10 +50,19 @@
       <button class="tab" data-view="longterm" role="tab" aria-selected="false">
         长期方向 <b id="count-longterm" class="count">0</b>
       </button>
+      <button class="tab" data-view="context" role="tab" aria-selected="false">AI 上下文</button>
       <button class="tab" data-view="log" role="tab" aria-selected="false">开发日志</button>
       <span class="spacer"></span>
       <span class="readonly-tag" title="插件只读取项目文件，不会修改文档">只读</span>
     </nav>
+
+    <div class="sourcebar" id="sourcebar">
+      <span class="sourcebar-label">项目文档文件夹</span>
+      <input id="doc-source-input" type="text" spellcheck="false" placeholder="选择或输入项目文档目录的绝对路径">
+      <button class="btn small" id="pick-folder" type="button">选择文件夹</button>
+      <button class="btn small primary" id="reindex" type="button">以当前项目文档文件夹更新状态</button>
+      <span class="sourcebar-status" id="source-status"></span>
+    </div>
 
     <main class="main">
       <section class="view docs" id="view-docs" role="tabpanel" aria-label="参考文档">
@@ -123,6 +132,16 @@
           <main class="lt-main" id="lt-main"></main>
           <aside class="lt-ref" id="lt-ref"></aside>
         </div>
+      </section>
+
+      <section class="view context" id="view-context" role="tabpanel" aria-label="AI 上下文" hidden>
+        <header class="context-head">
+          <div>
+            <h2>AI 上下文</h2>
+            <p id="context-meta">生成后，这里会显示 AI 可直接阅读的项目文档上下文。</p>
+          </div>
+        </header>
+        <div class="context-pane" id="context-pane"></div>
       </section>
 
       <section class="view log" id="view-log" role="tabpanel" aria-label="开发日志" hidden>

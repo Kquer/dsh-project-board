@@ -43,6 +43,7 @@ const state = {
   docs: { selected: null, content: null, error: null, mtimeMs: 0, lastPath: null, renderKey: null },
   log: { content: null, error: null, mtimeMs: 0, loaded: false },
   longterm: { saving: false },
+  context: { loading: false, markdown: null, error: null, renderKey: null },
   layoutLoadedFor: null,
   graph: {
     model: null,
@@ -279,6 +280,10 @@ function resolveAsset(target, sourcePath) {
   if (target.startsWith('/') || target.startsWith('data:')) return null
   const resolved = posixResolve(dirname(sourcePath), target)
   const referenceDir = state.index?.paths?.referenceDir || 'docs/reference'
+  const contextDir = state.index?.paths?.contextDir || 'docs/board'
+  if (resolved.startsWith(`${contextDir}/generated/`)) {
+    return `./api/context-asset?${apiQuery({ root: state.root, path: resolved })}`
+  }
   if (!resolved.startsWith(`${referenceDir}/`)) return null
   return assetUrl(resolved)
 }
@@ -807,6 +812,136 @@ function exportReference() {
 
 function copyGenerationPrompt() {
   copyText('请根据 docs/reference 下的技术文档和玩法文档，以及 docs/board/project-map.json 的当前结构，重新生成 docs/board/roadmap.json 的长期开发方向。保持建议性质：不要替我决定玩法、数值或优先级；每条方向写清 summary、rationale、relatedModules、sourceDocs，并标 horizon（next/mid/later）。')
+}
+
+function sourceStorageKey() {
+  return `dsh-project-board:docs-dir:v1:${state.root || ''}`
+}
+
+function renderSourceBar() {
+  const input = $('doc-source-input')
+  const status = $('source-status')
+  if (input === null || status === null) return
+  const saved = localStorage.getItem(sourceStorageKey()) || ''
+  const source = saved || state.index?.context?.sourceDir || ''
+  if (document.activeElement !== input) input.value = source
+  const context = state.index?.context
+  clear(status)
+  status.className = 'sourcebar-status'
+  if (context) {
+    status.classList.add('ok')
+    status.textContent = `${context.documentCount} 文档 · ${context.imageCount} 图片 · ${context.flowCount} 流程 · ${fmtTime(context.generatedAt) || '已生成'}`
+    status.title = context.warnings?.length ? context.warnings.join('\n') : context.sourceDir
+  } else {
+    status.textContent = '尚未生成 AI 上下文'
+    status.title = '选择项目文档文件夹后，点右侧按钮生成'
+  }
+}
+
+async function pickFolder() {
+  const button = $('pick-folder')
+  if (button.disabled) return
+  button.disabled = true
+  try {
+    const response = await fetch(`./api/pick-folder?${apiQuery({ root: state.root })}`, { method: 'POST' })
+    const body = await response.json().catch(() => ({}))
+    if (!response.ok || body.ok !== true) throw new Error(body.error || `HTTP ${response.status}`)
+    if (body.path) {
+      $('doc-source-input').value = body.path
+      localStorage.setItem(sourceStorageKey(), body.path)
+      toast('已选择文档文件夹；点「更新状态」生成 AI 上下文')
+    } else {
+      toast('已取消选择')
+    }
+  } catch (error) {
+    toast(`选择文件夹失败：${error instanceof Error ? error.message : String(error)}；可直接输入绝对路径`)
+    $('doc-source-input').focus()
+  } finally {
+    button.disabled = false
+  }
+}
+
+async function reindexDocs() {
+  const button = $('reindex')
+  const input = $('doc-source-input')
+  if (button.disabled) return
+  const sourceDir = input.value.trim()
+  if (sourceDir === '') {
+    toast('先选择项目文档文件夹，或输入绝对路径')
+    input.focus()
+    return
+  }
+  button.disabled = true
+  $('source-status').className = 'sourcebar-status'
+  $('source-status').textContent = '解析中…'
+  try {
+    const response = await fetch(`./api/reindex?${apiQuery({ root: state.root })}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ sourceDir }),
+    })
+    const body = await response.json().catch(() => ({}))
+    if (!response.ok || body.ok !== true) throw new Error(body.error || `HTTP ${response.status}`)
+    localStorage.setItem(sourceStorageKey(), sourceDir)
+    await loadIndex({ silent: true })
+    if (state.view === 'context') await loadContext(true)
+    toast(`已生成 AI 上下文：${body.documentCount} 文档 / ${body.imageCount} 图片 / ${body.flowCount} 流程`)
+  } catch (error) {
+    toast(`更新失败：${error instanceof Error ? error.message : String(error)}`)
+    $('source-status').className = 'sourcebar-status bad'
+    $('source-status').textContent = '解析失败'
+  } finally {
+    button.disabled = false
+    renderSourceBar()
+  }
+}
+
+async function loadContext(force = false) {
+  const pane = $('context-pane')
+  if (pane === null) return
+  if (state.context.loading && !force) return
+  state.context.loading = true
+  state.context.error = null
+  if (force || state.context.markdown === null) {
+    clear(pane)
+    pane.append(el('div', { class: 'loading', text: '读取 AI 上下文…' }))
+  }
+  try {
+    const body = await api('context', { root: state.root })
+    state.context.markdown = body.markdown
+    state.context.error = null
+    state.index = state.index ? { ...state.index, context: body.summary } : state.index
+  } catch (error) {
+    state.context.markdown = null
+    state.context.error = error.message
+  } finally {
+    state.context.loading = false
+    renderContext()
+    renderSourceBar()
+  }
+}
+
+function renderContext() {
+  const pane = $('context-pane')
+  const meta = $('context-meta')
+  if (pane === null) return
+  clear(pane)
+  const context = state.index?.context
+  if (meta !== null) {
+    meta.textContent = context
+      ? `${context.documentCount} 个文档 · ${context.imageCount} 张图片 · ${context.flowCount} 个流程 · 生成于 ${fmtTime(context.generatedAt) || context.generatedAt || '未知'}`
+      : '生成后，这里会显示 AI 可直接阅读的项目文档上下文。'
+  }
+  if (state.context.error !== null) {
+    pane.append(el('div', { class: 'error-box', text: `${state.context.error}。先在顶部选择文档文件夹并点「更新状态」。` }))
+    return
+  }
+  if (state.context.markdown === null) {
+    pane.append(el('div', { class: 'loading', text: '还没有生成 AI 上下文。选择文档文件夹后点「以当前项目文档文件夹更新状态」。' }))
+    return
+  }
+  const source = context?.paths?.markdown || 'docs/board/AI-CONTEXT.md'
+  pane.append(el('div', { class: 'md' }, renderMarkdown(state.context.markdown, source)))
 }
 
 // -------------------------------------------------------------------- graph
@@ -2705,7 +2840,7 @@ function setView(view) {
   for (const button of document.querySelectorAll('.tab')) {
     button.setAttribute('aria-selected', String(button.dataset.view === view))
   }
-  for (const name of ['docs', 'structure', 'longterm', 'log']) {
+  for (const name of ['docs', 'structure', 'longterm', 'context', 'log']) {
     $(`view-${name}`).hidden = name !== view
   }
   if (view === 'structure') {
@@ -2724,12 +2859,14 @@ function setView(view) {
   }
   if (view === 'log') loadLog()
   if (view === 'longterm') renderLongterm()
+  if (view === 'context') loadContext()
 }
 
 function renderAll() {
   renderHeader()
   renderDocList()
   renderDocPane()
+  renderSourceBar()
   rebuildGraph()
   renderLongterm()
 }
@@ -2773,6 +2910,9 @@ async function loadIndex({ silent = false } = {}) {
       state.graph.selectedFlow = null
       state.graph.flowStep = 0
       state.log.loaded = false
+      state.context.markdown = null
+      state.context.error = null
+      state.context.renderKey = null
     }
     const url = new URL(location.href)
     url.searchParams.set('root', state.root)
@@ -2823,6 +2963,7 @@ function wireUi() {
     loadIndex()
     if (state.docs.selected) openDoc(state.docs.selected, true)
     if (state.view === 'log') loadLog(true)
+    if (state.view === 'context') loadContext(true)
     toast('已刷新')
   })
   $('doc-filter').addEventListener('input', event => {
@@ -2876,6 +3017,13 @@ function wireUi() {
   $('export-svg').addEventListener('click', exportSvg)
   $('lt-prompt').addEventListener('click', copyGenerationPrompt)
   $('lt-export').addEventListener('click', exportReference)
+  $('pick-folder').addEventListener('click', pickFolder)
+  $('reindex').addEventListener('click', reindexDocs)
+  $('doc-source-input').addEventListener('change', event => {
+    const value = event.target.value.trim()
+    if (value === '') localStorage.removeItem(sourceStorageKey())
+    else localStorage.setItem(sourceStorageKey(), value)
+  })
   $('toggle-layers').addEventListener('click', () => {
     const menu = $('layer-menu')
     menu.hidden = !menu.hidden
@@ -2963,9 +3111,7 @@ async function boot() {
   wireUi()
   setView('docs')
   await loadIndex()
-  setInterval(() => {
-    if (document.visibilityState === 'visible') loadIndex({ silent: true })
-  }, 10000)
+  // Manual updates only: use the refresh button or the docs-folder reindex button.
 }
 
 boot()
