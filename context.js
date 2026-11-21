@@ -24,6 +24,13 @@ const SKIP_DIRS = new Set(['.git', '.svn', 'node_modules', '__pycache__', '.DS_S
 const CONTEXT_JSON = 'ai-context.json'
 const CONTEXT_MD = 'AI-CONTEXT.md'
 
+function redactSecrets(value) {
+  return String(value)
+    .replace(/((?:password|passwd|密码|token|secret|api[_-]?key)\s*[:：|]\s*)([^\s|,，。;；]+)/gi, '$1[REDACTED]')
+    .replace(/(--password\s+)(\S+)/gi, '$1[REDACTED]')
+    .replace(/([a-z][a-z0-9+.-]*:\/\/)([^\/\s:@]+):([^@\/\s]+)@/gi, '$1[REDACTED]@')
+}
+
 function sha1(buffer) {
   return crypto.createHash('sha1').update(buffer).digest('hex')
 }
@@ -312,6 +319,7 @@ export function buildContext(root, sourceDir, outputDir = 'docs/board') {
       try {
         const buffer = fs.readFileSync(entry.file)
         const parsed = docxToMarkdown(buffer, entry.rel, assetsDir, imagePrefix, warnings)
+        parsed.markdown = redactSecrets(parsed.markdown)
         entries.push({ path: entry.rel, type: 'docx', title: parsed.title, markdown: parsed.markdown, images: parsed.images })
         totalChars += parsed.markdown.length
       } catch (error) {
@@ -322,14 +330,14 @@ export function buildContext(root, sourceDir, outputDir = 'docs/board') {
         const parsed = posToGraph(fs.readFileSync(entry.file), entry.rel)
         const flow = { path: entry.rel, kind: parsed.kind, nodes: parsed.nodes, linkers: parsed.linkers, containers: parsed.containers, groups: parsed.groups, roots: parsed.roots, markdown: flowToMarkdown(parsed) }
         flows.push(flow)
-        entries.push({ path: entry.rel, type: 'pos', title: path.basename(entry.rel, '.pos'), markdown: flow.markdown, flows: [flow] })
+        entries.push({ path: entry.rel, type: 'pos', title: path.basename(entry.rel, '.pos'), markdown: redactSecrets(flow.markdown), flows: [flow] })
         totalChars += flow.markdown.length
       } catch (error) {
         warnings.push(`${entry.rel}: .pos 解析失败：${error.message}`)
       }
     } else if (TEXT_EXT.has(entry.extension)) {
       try {
-        const markdown = fs.readFileSync(entry.file, 'utf8')
+        const markdown = redactSecrets(fs.readFileSync(entry.file, 'utf8'))
         entries.push({ path: entry.rel, type: 'markdown', title: path.basename(entry.rel, entry.extension), markdown })
         totalChars += markdown.length
       } catch (error) {

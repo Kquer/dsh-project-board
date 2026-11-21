@@ -1,6 +1,12 @@
 # Changelog
 
+## 0.4.1 — 2026-11-21
+
+- Redact `password` / `密码` / `token` / `secret` / URL credentials from generated `AI-CONTEXT.md` and `ai-context.json` (the SVN README contains a password).
+- Keep the SVN docs folder scan out of `.svn` metadata.
+
 ## 0.4.0 — 2026-11-20
+
 
 - Manual **project documentation folder** picker (DSH native chooser, absolute-path fallback).
 - **Update from docs folder** button parses `.md/.txt/.docx/.pos/images` into `docs/board/AI-CONTEXT.md` + `ai-context.json` and refreshes `flow-reference.json`.
