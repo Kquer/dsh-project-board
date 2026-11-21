@@ -126,6 +126,27 @@ code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, m
 .sourcebar-status.ok { color: var(--green); }
 .sourcebar-status.bad { color: var(--red); }
 
+.ws-modal {
+  position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: rgba(20, 24, 30, .42); backdrop-filter: blur(3px);
+}
+.ws-modal[hidden] { display: none; }
+.ws-card {
+  width: min(520px, 100%); background: var(--panel); border: 1px solid var(--line-strong);
+  border-radius: 14px; box-shadow: 0 22px 70px rgba(0,0,0,.26); padding: 20px 22px 16px;
+}
+.ws-card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 650; }
+.ws-card p { margin: 0 0 14px; color: var(--text-3); font-size: 11.5px; line-height: 1.65; }
+.ws-card input {
+  width: 100%; height: 34px; padding: 0 11px; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--bg); color: var(--text); font-size: 12px;
+}
+.ws-card input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.ws-actions { display: flex; gap: 7px; margin-top: 11px; }
+.ws-actions .btn { height: 30px; }
+.ws-error { min-height: 16px; margin-top: 9px; color: var(--red); font-size: 11px; line-height: 1.5; white-space: pre-wrap; }
+
+
 .context { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
 .context-head { flex: none; padding: 16px 24px 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .context-head h2 { margin: 0 0 3px; font-size: 16px; font-weight: 650; }

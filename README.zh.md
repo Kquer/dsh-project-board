@@ -47,7 +47,7 @@ DSH 右侧栏只保留一个启动器；真正的主界面是**独立网页**：
 git clone git@github.com:Kquer/dsh-project-board.git
 cd dsh-project-board
 node --check index.js client.js web/app.js
-git tag -a v0.4.2 -m "dsh-project-board 0.4.2"   # 下一次发布
+git tag -a v0.5.1 -m "dsh-project-board 0.5.1"   # 下一次发布
 git push origin main --tags
 ```
 
@@ -263,6 +263,16 @@ DSH 的 **Plugins → Discover** 读取用户自己添加的索引，没有官�
 
 3. 把索引 JSON 托管到 HTTPS 地址（GitHub Pages 或 raw）。
 4. 用户在 **Plugins → Discover → Index sources** 添加这个地址。
+
+## 指定工作区
+
+默认看板跟随当前 DSH Session 的工作区。如果规划文档和 Unity 代码不在同一个目录，点顶部的 **指定工作区…**：
+
+1. 用 DSH 原生目录选择器选项目根目录，或直接输入绝对路径；
+2. 点 **应用**，插件会读取该根目录下的 `docs/board`、`docs/reference`、`docs/DEVLOG.md`、`docs/PROJECT.md`；
+3. 选择结果写入页面 URL 的 `?root=...`，刷新、项目选择器、文档文件夹更新、长期参考都会用它。
+
+目标目录必须像一个项目根：包含 `docs/board/project-map.json`、`docs/reference`、`docs/DEVLOG.md` 或 `docs/PROJECT.md`。插件不会复制或移动文件。这样可以在 Unity 代码工作区之外，单独指定规划工作区。
 
 ## 手动选择项目文档文件夹 + AI 上下文
 

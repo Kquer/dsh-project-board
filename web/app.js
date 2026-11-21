@@ -814,6 +814,67 @@ function copyGenerationPrompt() {
   copyText('请根据 docs/reference 下的技术文档和玩法文档，以及 docs/board/project-map.json 的当前结构，重新生成 docs/board/roadmap.json 的长期开发方向。保持建议性质：不要替我决定玩法、数值或优先级；每条方向写清 summary、rationale、relatedModules、sourceDocs，并标 horizon（next/mid/later）。')
 }
 
+function openWorkspaceDialog() {
+  const modal = $('workspace-modal')
+  const input = $('workspace-input')
+  const error = $('workspace-error')
+  if (modal === null || input === null) return
+  input.value = state.root || ''
+  if (error !== null) error.textContent = ''
+  modal.hidden = false
+  requestAnimationFrame(() => { input.focus(); input.select() })
+}
+
+function closeWorkspaceDialog() {
+  const modal = $('workspace-modal')
+  if (modal !== null) modal.hidden = true
+}
+
+async function pickWorkspaceFolder() {
+  const button = $('workspace-pick')
+  if (button.disabled) return
+  button.disabled = true
+  try {
+    const response = await fetch(`./api/pick-folder?${apiQuery({ root: state.root })}`, { method: 'POST' })
+    const body = await response.json().catch(() => ({}))
+    if (!response.ok || body.ok !== true) throw new Error(body.error || `HTTP ${response.status}`)
+    if (body.path) $('workspace-input').value = body.path
+  } catch (error) {
+    $('workspace-error').textContent = `选择文件夹失败：${error instanceof Error ? error.message : String(error)}`
+  } finally {
+    button.disabled = false
+  }
+}
+
+async function applyWorkspace() {
+  const input = $('workspace-input')
+  const error = $('workspace-error')
+  const button = $('workspace-apply')
+  if (input === null || button.disabled) return
+  const root = input.value.trim()
+  if (root === '') {
+    if (error !== null) error.textContent = '请输入项目工作区的绝对路径。'
+    input.focus()
+    return
+  }
+  button.disabled = true
+  if (error !== null) error.textContent = ''
+  try {
+    const probe = await api('index', { sessionId: state.sessionId, root })
+    if (probe.map === null && probe.mapError) {
+      throw new Error(probe.mapError)
+    }
+    state.root = probe.root || root
+    closeWorkspaceDialog()
+    await loadIndex()
+    toast(`已切换到工作区：${state.root}`)
+  } catch (err) {
+    if (error !== null) error.textContent = err instanceof Error ? err.message : String(err)
+  } finally {
+    button.disabled = false
+  }
+}
+
 function sourceStorageKey() {
   return `dsh-project-board:docs-dir:v1:${state.root || ''}`
 }
@@ -3017,6 +3078,17 @@ function wireUi() {
   $('export-svg').addEventListener('click', exportSvg)
   $('lt-prompt').addEventListener('click', copyGenerationPrompt)
   $('lt-export').addEventListener('click', exportReference)
+  $('choose-workspace').addEventListener('click', openWorkspaceDialog)
+  $('workspace-cancel').addEventListener('click', closeWorkspaceDialog)
+  $('workspace-pick').addEventListener('click', pickWorkspaceFolder)
+  $('workspace-apply').addEventListener('click', applyWorkspace)
+  $('workspace-input').addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); applyWorkspace() }
+    if (event.key === 'Escape') closeWorkspaceDialog()
+  })
+  $('workspace-modal').addEventListener('click', event => {
+    if (event.target === $('workspace-modal')) closeWorkspaceDialog()
+  })
   $('pick-folder').addEventListener('click', pickFolder)
   $('reindex').addEventListener('click', reindexDocs)
   $('doc-source-input').addEventListener('change', event => {

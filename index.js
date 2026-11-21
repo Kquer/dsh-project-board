@@ -195,9 +195,21 @@ function projectNameFrom(root, map) {
   return path.basename(root) || root
 }
 
+function looksLikeProjectRoot(target) {
+  const docs = path.join(target, 'docs')
+  if (!isDirectory(docs)) return false
+  return ['board/project-map.json', 'reference', 'DEVLOG.md', 'PROJECT.md']
+    .some(relative => fs.existsSync(path.join(docs, relative)))
+}
+
+function queryValue(query, name) {
+  if (query !== null && typeof query?.get === 'function') return query.get(name) ?? ''
+  return typeof query?.[name] === 'string' ? query[name] : ''
+}
+
 function resolveRoot(ctx, config, query) {
-  const sessionId = typeof query.sessionId === 'string' ? query.sessionId : ''
-  const requested = typeof query.root === 'string' ? query.root : ''
+  const sessionId = queryValue(query, 'sessionId')
+  const requested = queryValue(query, 'root')
   const fromSession = sessionRoot(ctx, sessionId)
   const configured = realDirectory(config.root)
   const registered = registeredWorkspaces(ctx).map(workspace => workspace.path)
@@ -206,8 +218,11 @@ function resolveRoot(ctx, config, query) {
   if (requested !== '') {
     const requestedReal = realDirectory(requested)
     if (requestedReal === undefined) throw new Error(`项目目录不存在：${requested}`)
-    if (allowed.size > 0 && !allowed.has(requestedReal)) {
-      throw new Error('该目录不是 DSH 已登记的 Workspace，无法打开')
+    // Explicit workspace selection: the browser token already gates the board.
+    // Allow a directory that looks like a project root even when it is not a
+    // DSH-registered workspace, so a separate docs/planning checkout works.
+    if (allowed.size > 0 && !allowed.has(requestedReal) && !looksLikeProjectRoot(requestedReal)) {
+      throw new Error('该目录不是项目根目录（缺少 docs/board/project-map.json、docs/reference、docs/DEVLOG.md 或 docs/PROJECT.md）')
     }
     return { root: requestedReal, sessionId, projects: collectProjects(ctx, config, requestedReal) }
   }

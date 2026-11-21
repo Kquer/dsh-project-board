@@ -1,6 +1,13 @@
 # Changelog
 
+## 0.5.0 — 2026-11-21
+
+- Add **指定工作区…**: pick or type a project root; it is persisted in the page URL and used by the board, docs folder, long-term reference, and reindex.
+- Allow project-like roots outside the DSH workspace registry (must contain `docs/board/project-map.json`, `docs/reference`, `docs/DEVLOG.md`, or `docs/PROJECT.md`).
+- Fix `resolveRoot` reading `URLSearchParams` with property access, which ignored `root` and `sessionId` and could fall back to the wrong registered workspace.
+
 ## 0.4.1 — 2026-11-21
+
 
 - Redact `password` / `密码` / `token` / `secret` / URL credentials from generated `AI-CONTEXT.md` and `ai-context.json` (the SVN README contains a password).
 - Keep the SVN docs folder scan out of `.svn` metadata.

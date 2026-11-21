@@ -47,7 +47,7 @@ This package is developed at [github.com/Kquer/dsh-project-board](https://github
 git clone git@github.com:Kquer/dsh-project-board.git
 cd dsh-project-board
 node --check index.js client.js web/app.js
-git tag -a v0.4.2 -m "dsh-project-board 0.4.2"   # for the next release
+git tag -a v0.5.1 -m "dsh-project-board 0.5.1"   # for the next release
 git push origin main --tags
 ```
 
@@ -263,6 +263,16 @@ DSH's **Plugins → Discover** reads indexes that users add; there is no officia
 
 3. Host the JSON at an HTTPS URL (GitHub Pages or raw).
 4. Users add that URL under **Plugins → Discover → Index sources**.
+
+## Specify a workspace
+
+By default the board follows the current DSH Session workspace. When the docs and the code live in different checkouts, click **指定工作区… / Specify workspace** in the top bar:
+
+1. Pick a project root with the DSH native folder picker, or type its absolute path.
+2. **应用 / Apply** reads that root's `docs/board`, `docs/reference`, `docs/DEVLOG.md`, and `docs/PROJECT.md`.
+3. The chosen root is kept in the page URL (`?root=...`) and used by refresh, the project picker, the docs-folder reindex, and the long-term reference.
+
+A root must look like a project: contain `docs/board/project-map.json`, `docs/reference`, `docs/DEVLOG.md`, or `docs/PROJECT.md`. The board does not copy or move files. This is the way to open a planning checkout while a different Unity checkout is the current Session workspace.
 
 ## Manual project-docs folder and AI context
 
