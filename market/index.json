@@ -34,12 +34,12 @@
       },
       "versions": [
         {
-          "version": "0.4.0",
-          "publishTimestamp": 1795170927,
+          "version": "0.4.1",
+          "publishTimestamp": 1795242227,
           "source": {
             "type": "git",
             "url": "https://github.com/Kquer/dsh-project-board",
-            "commit": "be52214a0018ce6a4da3c39ff6c8eb9f5270e140"
+            "commit": "ee0b50ed9459d6e54f05df8bc6533d2e4f1bcfce"
           },
           "engines": {
             "dsh": ">=0.2.2-rc.3 <0.3.0"
